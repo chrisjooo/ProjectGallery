@@ -66,7 +66,7 @@ func (u *AccountController) GetByUsername() {
 // @Failure 403 :id is empty
 // @router /:id [get]
 func (u *AccountController) GetByID() {
-	id := u.GetInt64(":id")
+	id, _ := u.GetInt64(":id")
 	if id != 0 {
 		account, err := models.GetAccountByID(id)
 		if err != nil {
