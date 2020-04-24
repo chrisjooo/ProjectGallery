@@ -5,10 +5,9 @@ import (
 
 	"github.com/astaxie/beego"
 
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 
 	"fmt"
-	"log"
 
 	"github.com/astaxie/beego/orm"
 	_ "github.com/go-sql-driver/mysql"
@@ -20,16 +19,16 @@ func main() {
 		beego.BConfig.WebConfig.StaticDir["/swagger"] = "swagger"
 	}
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	log.Fatal("Error loading .env file")
+	// }
 
 	dbUser := beego.AppConfig.String("mysqluser")
 	dbPwd := beego.AppConfig.String("mysqlpass")
 	dbName := beego.AppConfig.String("mysqldb")
 	dbUrls := beego.AppConfig.String("mysqlurls")
-	dbString := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4", dbUser, dbPwd, dbUrls, dbName)
+	dbString := fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=True&charset=utf8mb4", dbUser, dbPwd, dbUrls, dbName)
 
 	// Register Driver
 	orm.RegisterDriver("mysql", orm.DRMySQL)
@@ -48,7 +47,7 @@ func main() {
 	verbose := true
 
 	// error
-	err = orm.RunSyncdb(name, force, verbose)
+	err := orm.RunSyncdb(name, force, verbose)
 	if err != nil {
 		fmt.Println(err)
 	}

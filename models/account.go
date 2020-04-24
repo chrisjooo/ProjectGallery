@@ -14,30 +14,46 @@ func init() {
 }
 
 type Account struct {
-	ID          int64  `orm:"PK"`
-	Username    string `orm:"unique"`
-	Password    string
-	FullName    string
-	Email       string
-	Description string
-	CreatedAt   time.Time `orm:"auto_now_add;type(datetime)"`
+	Id          int64     `orm:"PK" json:"id"`
+	Username    string    `orm:"unique" json:"username"`
+	Password    string    `json:"password"`
+	FullName    string    `json:"fullname"`
+	Email       string    `json:"email"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `orm:"auto_now_add;type(datetime)" json:"created_at"`
+}
+
+type AccList struct {
+	NumAcc int64      `json:"total_account"`
+	Data   []*Account `json:"data"`
 }
 
 func AddAccount(u Account) (*Account, error) {
 	log.Print(u)
+	log.Println("creating account")
 	password := helpers.HashAndSalt([]byte(u.Password))
 	u.Password = password
 	//ORM database
 	o := orm.NewOrm()
-	_, err := o.Insert(&u)
+
+	//check username
+	acc := Account{Username: u.Username}
+	err := o.Read(&acc, "Username")
+	if err == nil || err != orm.ErrNoRows {
+		log.Print(err)
+		return nil, errors.New("username already exist")
+	}
+	log.Print("sampai sini")
+
+	newId, err := o.Insert(&u)
 	if err == nil {
 		//successfully inserted
+		u.Id = newId
+		log.Print("new: ", u)
 		return &u, nil
 	} else {
-		err = o.Read(&u)
-		if err != nil {
-			return nil, err
-		}
+		log.Print("error here")
+		return nil, errors.New("error inserting account")
 	}
 
 	return &u, err
@@ -50,6 +66,7 @@ func GetAccount(username string) (u *Account, err error) {
 	acc := Account{Username: username}
 	err = o.Read(&acc, "Username")
 	if err != nil {
+		log.Print("read account error: ", err)
 		return nil, errors.New("Account not exists")
 	} else {
 		return &acc, nil
@@ -57,29 +74,17 @@ func GetAccount(username string) (u *Account, err error) {
 
 }
 
-func GetAccountByID(id int64) (u *Account, err error) {
-	o := orm.NewOrm()
-	acc := Account{ID: id}
-	err = o.Read(&acc)
-	if err != nil {
-		return nil, errors.New("Account not exists")
-	} else {
-		return &acc, nil
-	}
-}
-
-func GetAllAccounts() map[string]*Account {
+func GetAllAccounts() *AccList {
 
 	o := orm.NewOrm()
-	AccList := make(map[string]*Account)
-	var Accounts []*Account
-	o.QueryTable(new(Account)).All(&Accounts)
+	list := &AccList{}
+	var account []*Account
+	o.QueryTable(new(Account)).All(&account)
 
-	for _, v := range Accounts {
-		AccList[v.Username] = v
-	}
+	list.Data = account
+	list.NumAcc = int64(len(account))
 
-	return AccList
+	return list
 
 }
 
@@ -129,16 +134,23 @@ func DeleteAccount(username string) {
 	}
 }
 
-// func Login(username, password string) (bool, error) {
-// 	o := orm.NewOrm()
-// 	acc := Account{Username: username, Password: password}
-// 	err := o.Read(&acc, "username", "password")
-// 	if err != nil {
-// 		return true, nil
-// 	} else {
-// 		return false, errors.New("Invalid username or password")
-// 	}
-// }
+func Login(username, password string) (bool, error) {
+	o := orm.NewOrm()
+	acc := Account{Username: username}
+
+	err := o.Read(&acc, "username")
+
+	if err != nil {
+		return false, errors.New("InvalId username or password")
+	}
+
+	check := helpers.ComparePassword(acc.Password, []byte(password))
+	if check {
+		return true, nil
+	} else {
+		return false, errors.New("InvalId username or password")
+	}
+}
 
 // func Logout(username string) (error) {
 

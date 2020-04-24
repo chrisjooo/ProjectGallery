@@ -23,7 +23,7 @@ func (u *AccountController) Post() {
 	log.Print(account)
 	newAcc, err := models.AddAccount(account)
 	if err != nil {
-		u.Data["json"] = err
+		u.Data["json"] = err.Error()
 	} else {
 		u.Data["json"] = newAcc
 	}
@@ -32,7 +32,7 @@ func (u *AccountController) Post() {
 
 // @Title GetAll
 // @Description get all Users
-// @Success 200 {object} models.Account
+// @Success 200 {object} models.AccList
 // @router / [get]
 func (u *AccountController) GetAll() {
 	accounts := models.GetAllAccounts()
@@ -48,27 +48,9 @@ func (u *AccountController) GetAll() {
 // @router /:username [get]
 func (u *AccountController) GetByUsername() {
 	username := u.GetString(":username")
+	log.Print("\nusername : ", username, "\n")
 	if username != "" {
 		account, err := models.GetAccount(username)
-		if err != nil {
-			u.Data["json"] = err.Error()
-		} else {
-			u.Data["json"] = account
-		}
-	}
-	u.ServeJSON()
-}
-
-// @Title GetByID
-// @Description get user by username
-// @Param	id		path 	int	true		"The key for staticblock"
-// @Success 200 {object} models.Account
-// @Failure 403 :id is empty
-// @router /:id [get]
-func (u *AccountController) GetByID() {
-	id, _ := u.GetInt64(":id")
-	if id != 0 {
-		account, err := models.GetAccountByID(id)
 		if err != nil {
 			u.Data["json"] = err.Error()
 		} else {
@@ -113,23 +95,25 @@ func (u *AccountController) Delete() {
 	u.ServeJSON()
 }
 
-// // @Title Login
-// // @Description Logs user into the system
-// // @Param	username		query 	string	true		"The username for login"
-// // @Param	password		query 	string	true		"The password for login"
-// // @Success 200 {string} login success
-// // @Failure 403 user not exist
-// // @router /login [get]
-// func (u *AccountController) Login() {
-// 	username := u.GetString("username")
-// 	password := u.GetString("password")
-// 	if models.Login(username, password) {
-// 		u.Data["json"] = "login success"
-// 	} else {
-// 		u.Data["json"] = "user not exist"
-// 	}
-// 	u.ServeJSON()
-// }
+// @Title Login
+// @Description Logs user into the system
+// @Param	username		query 	string	true		"The username for login"
+// @Param	password		query 	string	true		"The password for login"
+// @Success 200 {string} login success
+// @Failure 403 user not exist
+// @router /login [post]
+func (u *AccountController) Login() {
+	var account models.Account
+	json.Unmarshal(u.Ctx.Input.RequestBody, &account)
+	check, err := models.Login(account.Username, account.Password)
+
+	if check {
+		u.Data["json"] = "login success"
+	} else {
+		u.Data["json"] = err.Error()
+	}
+	u.ServeJSON()
+}
 
 // // @Title logout
 // // @Description Logs out current logged in user session

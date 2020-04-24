@@ -15,17 +15,17 @@ func init() {
 		),
 		beego.NSNamespace("/account",
 			beego.NSInclude(
-				&controllers.MainController{},
+				&controllers.AccountController{},
 			),
 		),
 		beego.NSNamespace("/project",
 			beego.NSInclude(
-				&controllers.MainController{},
+				&controllers.ProjectController{},
 			),
 		),
 		beego.NSNamespace("/rating",
 			beego.NSInclude(
-				&controllers.MainController{},
+				&controllers.RatingController{},
 			),
 		),
 	)
