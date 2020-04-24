@@ -23,7 +23,7 @@ func (u *ProjectController) Post() {
 	log.Print(project)
 	newProject, err := models.AddProject(project)
 	if err != nil {
-		u.Data["json"] = err
+		u.Data["json"] = err.Error()
 	} else {
 		u.Data["json"] = newProject
 	}
@@ -31,33 +31,29 @@ func (u *ProjectController) Post() {
 }
 
 // @Title GetProjectsByName
-// @Description get all project with specific name
+// @Description get all projects with specific name
 // @Success 200 {object} models.Project
 // @router /:name [get]
 func (u *ProjectController) GetProjectsByName() {
 	name := u.GetString(":name")
+	log.Print("\nproject name : ", name, "\n")
 	if name != "" {
 		projects := models.GetProjects(name)
-		if projects == nil {
-
-			u.Data["json"] = "not found"
-		} else {
-			u.Data["json"] = projects
-		}
+		u.Data["json"] = projects
 	}
 	u.ServeJSON()
 }
 
-// @Title GetByID
+// @Title GetById
 // @Description get user by username
 // @Param	id		path 	int	true		"The key for staticblock"
 // @Success 200 {object} models.Project
 // @Failure 403 :id is empty
-// @router /:id [get]
-func (u *ProjectController) GetByID() {
+// @router /id/:id [get]
+func (u *ProjectController) GetById() {
 	id, _ := u.GetInt64(":id")
 	if id != 0 {
-		project, err := models.GetProjectByID(id)
+		project, err := models.GetProjectById(id)
 		if err != nil {
 			u.Data["json"] = err.Error()
 		} else {

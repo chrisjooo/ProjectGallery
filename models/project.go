@@ -13,76 +13,85 @@ func init() {
 }
 
 type Project struct {
-	ID          int64 `orm:"PK"`
-	Name        string
-	Rating      int
-	AuthorID    int64
-	Description string
-	CreatedAt   time.Time `orm:"auto_now_add;type(datetime)"`
-	UpdatedAt   time.Time `orm:"auto_now;type(datetime)"`
+	Id          int64     `orm:"PK" json:"id"`
+	Name        string    `json:"name"`
+	Rate        int       `json:"rate"`
+	Author      string    `json:"author"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `orm:"auto_now_add;type(datetime)" json:"created_at"`
+	UpdatedAt   time.Time `orm:"auto_now;type(datetime)" json:"updated_at"`
+}
+
+type ProjectList struct {
+	NumProject int64      `json:"total_project"`
+	Data       []*Project `json:"data"`
 }
 
 func AddProject(u Project) (*Project, error) {
 	log.Print(u)
 
+	u.Rate = 0
 	//ORM database
 	o := orm.NewOrm()
 
 	//checking author already member
-	var acc Account
 	log.Print("checking account")
-	err := o.Raw("SELECT * FROM account WHERE username = ?", u.AuthorID).QueryRow(&acc)
+	_, err := GetAccount(u.Author)
 	if err != nil {
-		return nil, errors.New("acc is not a member")
+		log.Println("error :", err)
+		return nil, errors.New("account is not a member")
 	}
 
 	log.Print("entering insertion", u)
-	_, err = o.Insert(&u)
+	newId, err := o.Insert(&u)
 	if err == nil {
 		//successfully inserted
 		log.Print("success")
+		u.Id = newId
 		return &u, nil
 	} else {
 		log.Print("error", err)
-		return nil, errors.New("error inserting vote")
+		return nil, errors.New("error inserting project")
 	}
 
 }
 
-func GetProjects(name string) map[string]*Project {
+func GetProjects(projectName string) *ProjectList {
 	o := orm.NewOrm()
-	ProjectList := make(map[string]*Project)
-	var Projects []*Project
-
-	_, err := o.Raw("SELECT * FROM project WHERE name = %?%", name).QueryRows(&Projects)
+	list := &ProjectList{}
+	var projects []*Project
+	sql := "SELECT * FROM project WHERE LOWER(name) LIKE '%" + projectName + "%'"
+	log.Print("query: ", sql)
+	num, err := o.Raw(sql).QueryRows(&projects)
 	if err != nil {
+		log.Print("error query: ", err)
 		return nil
 	}
+	list.Data = projects
+	list.NumProject = num
 
-	for _, v := range Projects {
-		ProjectList[v.Name] = v
-	}
-
-	return ProjectList
+	return list
 
 }
 
-func GetProjectByID(id int64) (*Project, error) {
+func GetProjectById(Id int64) (*Project, error) {
 	o := orm.NewOrm()
-	project := Project{ID: id}
+	project := Project{Id: Id}
 
 	err := o.Read(&project)
-	if err != nil {
+	if err == orm.ErrNoRows {
 		return nil, errors.New("Account not exists")
+	} else if err != nil {
+		return nil, err
 	} else {
 		return &project, nil
 	}
 }
 
-func UpdateProject(id int64, uu *Project) (a *Project, err error) {
+func UpdateProject(Id int64, uu *Project) (a *Project, err error) {
 	o := orm.NewOrm()
 
-	u, err := GetProjectByID(id)
+	u, err := GetProjectById(Id)
 
 	log.Print(*u)
 
@@ -93,8 +102,8 @@ func UpdateProject(id int64, uu *Project) (a *Project, err error) {
 		if uu.Name != "" {
 			u.Name = uu.Name
 		}
-		if uu.Rating != 0 {
-			u.Rating = uu.Rating
+		if uu.Rate != 0 {
+			u.Rate = uu.Rate
 		}
 		log.Print("REACHED HERE")
 		// ORM Update
@@ -108,13 +117,16 @@ func UpdateProject(id int64, uu *Project) (a *Project, err error) {
 			return nil, err1
 		}
 	} else {
-		return nil, errors.New("Project Not Exist")
+		if err == orm.ErrNoRows {
+			return nil, errors.New("Project Not Exist")
+		}
+		return nil, err
 	}
 }
 
-func DeleteProject(id int64) {
+func DeleteProject(Id int64) {
 	o := orm.NewOrm()
-	_, err := o.Delete(&Project{ID: id})
+	_, err := o.Delete(&Project{Id: Id})
 
 	log.Print(err)
 
