@@ -15,11 +15,9 @@ func init() {
 type Project struct {
 	Id          int64     `orm:"PK" json:"id"`
 	Name        string    `json:"name"`
-	Rate        int       `json:"rate"`
 	Author      string    `json:"author"`
 	Description string    `json:"description"`
 	CreatedAt   time.Time `orm:"auto_now_add;type(datetime)" json:"created_at"`
-	UpdatedAt   time.Time `orm:"auto_now;type(datetime)" json:"updated_at"`
 }
 
 type ProjectList struct {
@@ -29,8 +27,6 @@ type ProjectList struct {
 
 func AddProject(u Project) (*Project, error) {
 	log.Print(u)
-
-	u.Rate = 0
 	//ORM database
 	o := orm.NewOrm()
 
@@ -38,8 +34,11 @@ func AddProject(u Project) (*Project, error) {
 	log.Print("checking account")
 	_, err := GetAccount(u.Author)
 	if err != nil {
+		if err == orm.ErrNoRows {
+			return nil, errors.New("account is not a member")
+		}
 		log.Println("error :", err)
-		return nil, errors.New("account is not a member")
+		return nil, err
 	}
 
 	log.Print("entering insertion", u)
@@ -102,10 +101,6 @@ func UpdateProject(Id int64, uu *Project) (a *Project, err error) {
 		if uu.Name != "" {
 			u.Name = uu.Name
 		}
-		if uu.Rate != 0 {
-			u.Rate = uu.Rate
-		}
-		log.Print("REACHED HERE")
 		// ORM Update
 		_, err1 := o.Update(u)
 		log.Print(u, err)

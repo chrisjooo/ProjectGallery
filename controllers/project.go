@@ -51,13 +51,17 @@ func (u *ProjectController) GetProjectsByName() {
 // @Failure 403 :id is empty
 // @router /id/:id [get]
 func (u *ProjectController) GetById() {
-	id, _ := u.GetInt64(":id")
-	if id != 0 {
-		project, err := models.GetProjectById(id)
-		if err != nil {
-			u.Data["json"] = err.Error()
-		} else {
-			u.Data["json"] = project
+	id, err := u.GetInt64(":id")
+	if err != nil {
+		u.Data["json"] = err.Error()
+	} else {
+		if id != 0 {
+			project, err := models.GetProjectById(id)
+			if err != nil {
+				u.Data["json"] = err.Error()
+			} else {
+				u.Data["json"] = project
+			}
 		}
 	}
 	u.ServeJSON()
@@ -71,17 +75,22 @@ func (u *ProjectController) GetById() {
 // @Failure 403 :id is null
 // @router /:id [put]
 func (u *ProjectController) Put() {
-	id, _ := u.GetInt64(":id")
-	if id != 0 {
-		var project models.Project
-		json.Unmarshal(u.Ctx.Input.RequestBody, &project)
-		uu, err := models.UpdateProject(id, &project)
-		if err != nil {
-			u.Data["json"] = err.Error()
-		} else {
-			u.Data["json"] = uu
+	id, err := u.GetInt64(":id")
+	if err != nil {
+		u.Data["json"] = err.Error()
+	} else {
+		if id != 0 {
+			var project models.Project
+			json.Unmarshal(u.Ctx.Input.RequestBody, &project)
+			uu, err := models.UpdateProject(id, &project)
+			if err != nil {
+				u.Data["json"] = err.Error()
+			} else {
+				u.Data["json"] = uu
+			}
 		}
 	}
+
 	u.ServeJSON()
 }
 
@@ -92,11 +101,15 @@ func (u *ProjectController) Put() {
 // @Failure 403 id is empty
 // @router /:id [delete]
 func (u *ProjectController) Delete() {
-	id, _ := u.GetInt64(":id")
-	if id != 0 {
-		models.DeleteProject(id)
-		u.Data["json"] = "delete success!"
-		u.ServeJSON()
+	id, err := u.GetInt64(":id")
+	if err != nil {
+		u.Data["json"] = err.Error()
+	} else {
+		if id != 0 {
+			models.DeleteProject(id)
+			u.Data["json"] = "delete success!"
+			u.ServeJSON()
+		}
 	}
 
 }
