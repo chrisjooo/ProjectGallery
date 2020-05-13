@@ -25,7 +25,7 @@ func init() {
 		),
 		beego.NSNamespace("/rating",
 			beego.NSInclude(
-				&controllers.RatingController{},
+				&controllers.VoteController{},
 			),
 		),
 	)
