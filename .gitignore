@@ -1,2 +1,4 @@
 *.exe
 *.conf
+*.sum
+main
