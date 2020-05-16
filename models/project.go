@@ -13,11 +13,11 @@ func init() {
 }
 
 type Project struct {
-	Id          int64     `orm:"PK" json:"id"`
-	Name        string    `json:"name"`
-	Author      string    `json:"author"`
-	ProjectPic  string    `json:"project_pic"`
-	Description string    `json:"description"`
+	Id          int64     `orm:"PK" json:"id" form:"-"`
+	Name        string    `json:"name" form:"name"`
+	Author      string    `json:"author" form:"author"`
+	ProjectPic  string    `json:"project_pic" form:"project_pic"`
+	Description string    `json:"description" form:"description"`
 	CreatedAt   time.Time `orm:"auto_now_add;type(datetime)" json:"created_at"`
 }
 

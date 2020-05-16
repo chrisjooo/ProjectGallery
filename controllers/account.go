@@ -84,14 +84,13 @@ func (u *AccountController) Put() {
 			fileName := header.Filename
 			log.Printf("\nfilename: %v", fileName)
 			url := "./static/images/accounts/" + fileName
-			// save to server
-			err = u.SaveToFile("profile_pic", url)
+			account.ProfilePic = url
+
+			uu, err := models.UpdateAccount(username, &account)
 			if err != nil {
 				u.Data["json"] = err.Error()
 			} else {
-				log.Printf("i guess the images shouldve been saved?")
-				account.ProfilePic = url
-				uu, err := models.UpdateAccount(username, &account)
+				err = u.SaveToFile("profile_pic", url)
 				if err != nil {
 					u.Data["json"] = err.Error()
 				} else {
