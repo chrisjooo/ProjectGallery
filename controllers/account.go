@@ -74,15 +74,23 @@ func (u *AccountController) Put() {
 		account := models.Account{}
 
 		u.ParseForm(&account)
+
+		log.Printf("account: %v\n", account)
+
 		file, header, err := u.GetFile("profile_pic") // where <<this>> is the controller and <<file>> the id of your form field
+		log.Printf("\nGoing through err: %v", err)
 		if file != nil {
 			// get the filename
 			fileName := header.Filename
+			log.Printf("\nfilename: %v", fileName)
+			url := "./static/images/accounts/" + fileName
 			// save to server
-			err = u.SaveToFile("profile_pic", "../ProjectGalerry/static/images/accounts/"+fileName)
+			err = u.SaveToFile("profile_pic", url)
 			if err != nil {
 				u.Data["json"] = err.Error()
 			} else {
+				log.Printf("i guess the images shouldve been saved?")
+				account.ProfilePic = url
 				uu, err := models.UpdateAccount(username, &account)
 				if err != nil {
 					u.Data["json"] = err.Error()
