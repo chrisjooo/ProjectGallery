@@ -14,12 +14,13 @@ func init() {
 }
 
 type Account struct {
-	Id          int64     `orm:"PK" json:"id"`
-	Username    string    `orm:"unique" json:"username"`
-	Password    string    `json:"password"`
-	FullName    string    `json:"fullname"`
-	Email       string    `json:"email"`
-	Description string    `json:"description"`
+	Id          int64     `orm:"PK" json:"id" form:"-"`
+	Username    string    `orm:"unique" json:"username" form:"username"`
+	Password    string    `json:"password" form:"password"`
+	FullName    string    `json:"fullname" form:"fullname"`
+	Email       string    `json:"email" form:"email"`
+	ProfilePic  string    `json:"profile_pic" form:"profile_pic"`
+	Description string    `json:"description" form:"description"`
 	CreatedAt   time.Time `orm:"auto_now_add;type(datetime)" json:"created_at"`
 }
 
@@ -53,6 +54,7 @@ func AddAccount(u Account) (*Account, error) {
 		return &u, nil
 	} else {
 		log.Print("error here")
+		log.Printf("\n%v\n", err)
 		return nil, errors.New("error inserting account")
 	}
 
@@ -108,6 +110,9 @@ func UpdateAccount(username string, uu *Account) (a *Account, err error) {
 		if uu.Password != "" {
 			password := helpers.HashAndSalt([]byte(uu.Password))
 			u.Password = password
+		}
+		if uu.ProfilePic != "" {
+			u.ProfilePic = uu.ProfilePic
 		}
 		log.Print("REACHED HERE")
 		// ORM Update

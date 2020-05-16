@@ -70,13 +70,33 @@ func (u *AccountController) GetByUsername() {
 func (u *AccountController) Put() {
 	username := u.GetString(":username")
 	if username != "" {
-		var account models.Account
-		json.Unmarshal(u.Ctx.Input.RequestBody, &account)
-		uu, err := models.UpdateAccount(username, &account)
-		if err != nil {
-			u.Data["json"] = err.Error()
+
+		account := models.Account{}
+
+		u.ParseForm(&account)
+		file, header, err := u.GetFile("profile_pic") // where <<this>> is the controller and <<file>> the id of your form field
+		if file != nil {
+			// get the filename
+			fileName := header.Filename
+			// save to server
+			err = u.SaveToFile("profile_pic", "../ProjectGalerry/static/images/accounts/"+fileName)
+			if err != nil {
+				u.Data["json"] = err.Error()
+			} else {
+				uu, err := models.UpdateAccount(username, &account)
+				if err != nil {
+					u.Data["json"] = err.Error()
+				} else {
+					u.Data["json"] = uu
+				}
+			}
 		} else {
-			u.Data["json"] = uu
+			uu, err := models.UpdateAccount(username, &account)
+			if err != nil {
+				u.Data["json"] = err.Error()
+			} else {
+				u.Data["json"] = uu
+			}
 		}
 	}
 	u.ServeJSON()

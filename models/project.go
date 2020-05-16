@@ -16,6 +16,7 @@ type Project struct {
 	Id          int64     `orm:"PK" json:"id"`
 	Name        string    `json:"name"`
 	Author      string    `json:"author"`
+	ProjectPic  string    `json:"project_pic"`
 	Description string    `json:"description"`
 	CreatedAt   time.Time `orm:"auto_now_add;type(datetime)" json:"created_at"`
 }
@@ -100,6 +101,9 @@ func UpdateProject(Id int64, uu *Project) (a *Project, err error) {
 		}
 		if uu.Name != "" {
 			u.Name = uu.Name
+		}
+		if uu.ProjectPic != "" {
+			u.ProjectPic = uu.ProjectPic
 		}
 		// ORM Update
 		_, err1 := o.Update(u)

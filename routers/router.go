@@ -23,7 +23,7 @@ func init() {
 				&controllers.ProjectController{},
 			),
 		),
-		beego.NSNamespace("/rating",
+		beego.NSNamespace("/vote",
 			beego.NSInclude(
 				&controllers.VoteController{},
 			),
