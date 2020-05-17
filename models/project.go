@@ -27,33 +27,30 @@ type ProjectList struct {
 }
 
 func AddProject(u Project) (*Project, error) {
-	log.Print(u)
 	//ORM database
 	o := orm.NewOrm()
 
 	//checking author already member
-	log.Print("checking account")
 	_, err := GetAccount(u.Author)
 	if err != nil {
 		if err == orm.ErrNoRows {
 			return nil, errors.New("account is not a member")
 		}
-		log.Println("error :", err)
+		log.Println("error: ", err)
 		return nil, err
 	}
 
-	log.Print("entering insertion", u)
 	newId, err := o.Insert(&u)
 	if err == nil {
 		//successfully inserted
-		log.Print("success")
 		u.Id = newId
-		return &u, nil
 	} else {
-		log.Print("error", err)
-		return nil, errors.New("error inserting project")
+		err = o.Read(&u)
+		if err != nil {
+			return nil, errors.New("failed insertion")
+		}
 	}
-
+	return &u, nil
 }
 
 func GetProjects(projectName string) *ProjectList {
@@ -61,7 +58,6 @@ func GetProjects(projectName string) *ProjectList {
 	list := &ProjectList{}
 	var projects []*Project
 	sql := "SELECT * FROM project WHERE LOWER(name) LIKE '%" + projectName + "%'"
-	log.Print("query: ", sql)
 	num, err := o.Raw(sql).QueryRows(&projects)
 	if err != nil {
 		log.Print("error query: ", err)
@@ -80,7 +76,7 @@ func GetProjectById(Id int64) (*Project, error) {
 
 	err := o.Read(&project)
 	if err == orm.ErrNoRows {
-		return nil, errors.New("Account not exists")
+		return nil, errors.New("Project not exists")
 	} else if err != nil {
 		return nil, err
 	} else {
@@ -93,9 +89,10 @@ func UpdateProject(Id int64, uu *Project) (a *Project, err error) {
 
 	u, err := GetProjectById(Id)
 
-	log.Print(*u)
-
 	if err == nil {
+		if uu.Author != u.Author {
+			return nil, errors.New("not matching author")
+		}
 		if uu.Description != "" {
 			u.Description = uu.Description
 		}
@@ -123,13 +120,24 @@ func UpdateProject(Id int64, uu *Project) (a *Project, err error) {
 	}
 }
 
-func DeleteProject(Id int64) {
+func DeleteProject(Id int64) error {
 	o := orm.NewOrm()
-	_, err := o.Delete(&Project{Id: Id})
+
+	_, err := GetProjectById(Id)
+	if err != nil {
+		if err == orm.ErrNoRows {
+			return errors.New("Project Not Exist")
+		}
+		return err
+	}
+
+	_, err = o.Delete(&Project{Id: Id})
 
 	log.Print(err)
 
 	if err != nil {
 		log.Fatal("delete Project failed")
+		return err
 	}
+	return nil
 }

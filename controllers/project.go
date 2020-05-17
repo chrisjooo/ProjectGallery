@@ -1,8 +1,11 @@
 package controllers
 
 import (
+	"ProjectGallery/helpers"
 	"ProjectGallery/models"
-	"log"
+	"strconv"
+
+	"strings"
 
 	"github.com/astaxie/beego"
 )
@@ -20,33 +23,35 @@ func (u *ProjectController) Post() {
 	project := models.Project{}
 	u.ParseForm(&project)
 
-	log.Printf("project: %v", project)
-
-	file, header, err := u.GetFile("project_pic") // where <<this>> is the controller and <<file>> the id of your form field
-	log.Printf("\nGoing through err: %v", err)
-	if file != nil {
-		// get the filename
-		fileName := header.Filename
-		log.Printf("\nfilename: %v", fileName)
-		url := "./static/images/projects/" + fileName
-		project.ProjectPic = url
-		uu, err := models.AddProject(project)
-		if err != nil {
-			u.Data["json"] = err.Error()
-		} else {
-			err = u.SaveToFile("project_pic", url)
+	uu, err := models.AddProject(project)
+	if err != nil {
+		u.Data["json"] = err.Error()
+	} else {
+		file, header, err := u.GetFile("project_pic")
+		if file != nil {
+			// get the filename
+			fileName := header.Filename
+			url := "./static/images/projects/"
+			fileType := fileName[strings.IndexByte(fileName, '.'):]
+			newFileName := url + strconv.FormatInt(uu.Id, 10) + fileType
+			project.ProjectPic = newFileName
+			err = u.SaveToFile("project_pic", newFileName)
 			if err != nil {
 				u.Data["json"] = err.Error()
 			} else {
-				u.Data["json"] = uu
+				err = helpers.CompressToPNG(newFileName)
+				if err != nil {
+					u.Data["json"] = err.Error()
+				} else {
+					//update
+					uu, err = models.UpdateProject(uu.Id, &project)
+					if err != nil {
+						u.Data["json"] = err.Error()
+					} else {
+						u.Data["json"] = uu
+					}
+				}
 			}
-		}
-	} else {
-		uu, err := models.AddProject(project)
-		if err != nil {
-			u.Data["json"] = err.Error()
-		} else {
-			u.Data["json"] = uu
 		}
 	}
 	u.ServeJSON()
@@ -58,7 +63,6 @@ func (u *ProjectController) Post() {
 // @router /:name [get]
 func (u *ProjectController) GetProjectsByName() {
 	name := u.GetString(":name")
-	log.Print("\nproject name : ", name, "\n")
 	if name != "" {
 		projects := models.GetProjects(name)
 		u.Data["json"] = projects
@@ -103,28 +107,31 @@ func (u *ProjectController) Put() {
 	} else {
 		if id != 0 {
 			project := models.Project{}
-
 			u.ParseForm(&project)
 
-			log.Printf("project: %v\n", project)
-
 			file, header, err := u.GetFile("project_pic") // where <<this>> is the controller and <<file>> the id of your form field
-			log.Printf("\nGoing through err: %v\n\n header: %v", err, header)
 			if file != nil {
 				// get the filename
 				fileName := header.Filename
-				log.Printf("\nfilename: %v", fileName)
-				url := "./static/images/projects/" + fileName
-				project.ProjectPic = url
-				uu, err := models.UpdateProject(id, &project)
+				url := "./static/images/projects/"
+				fileType := fileName[strings.IndexByte(fileName, '.'):]
+				newFileName := url + strconv.FormatInt(id, 10) + fileType
+
+				err = u.SaveToFile("project_pic", newFileName)
 				if err != nil {
 					u.Data["json"] = err.Error()
 				} else {
-					err = u.SaveToFile("project_pic", url)
+					err = helpers.CompressToPNG(newFileName)
 					if err != nil {
 						u.Data["json"] = err.Error()
 					} else {
-						u.Data["json"] = uu
+						project.ProjectPic = newFileName
+						uu, err1 := models.UpdateProject(id, &project)
+						if err1 != nil {
+							u.Data["json"] = err1.Error()
+						} else {
+							u.Data["json"] = uu
+						}
 					}
 				}
 			} else {
@@ -153,8 +160,12 @@ func (u *ProjectController) Delete() {
 		u.Data["json"] = err.Error()
 	} else {
 		if id != 0 {
-			models.DeleteProject(id)
-			u.Data["json"] = "delete success!"
+			err = models.DeleteProject(id)
+			if err != nil {
+				u.Data["json"] = err.Error()
+			} else {
+				u.Data["json"] = "delete success!"
+			}
 			u.ServeJSON()
 		}
 	}

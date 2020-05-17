@@ -3,7 +3,6 @@ package controllers
 import (
 	"ProjectGallery/models"
 	"encoding/json"
-	"log"
 	"strconv"
 
 	"github.com/astaxie/beego"
@@ -21,10 +20,9 @@ type VoteController struct {
 func (u *VoteController) Post() {
 	var rating models.Vote
 	json.Unmarshal(u.Ctx.Input.RequestBody, &rating)
-	log.Print(rating)
 	newrating, err := models.AddVote(rating)
 	if err != nil {
-		u.Data["json"] = err
+		u.Data["json"] = err.Error()
 	} else {
 		u.Data["json"] = newrating
 	}
@@ -41,8 +39,12 @@ func (u *VoteController) GetProjectVote() {
 	if err != nil {
 		u.Data["json"] = err.Error()
 	} else {
-		totalLike := models.GetTotalVote(projectId)
-		u.Data["json"] = totalLike
+		err, totalLike := models.GetTotalVote(projectId)
+		if err != nil {
+			u.Data["json"] = err.Error()
+		} else {
+			u.Data["json"] = totalLike
+		}
 	}
 	u.ServeJSON()
 }
@@ -58,11 +60,8 @@ func (u *VoteController) Put() {
 	json.Unmarshal(u.Ctx.Input.RequestBody, &rating)
 
 	author, projectId := rating.Author, rating.ProjectId
-
-	log.Print("author ", author, " projectId ", projectId)
-
 	if author != "" && projectId != 0 {
-		uu, err := models.UpdateVote(author, projectId, &rating)
+		uu, err := models.UpdateVote(&rating)
 		if err != nil {
 			u.Data["json"] = err.Error()
 		} else {
@@ -75,13 +74,13 @@ func (u *VoteController) Put() {
 
 // @Title Delete
 // @Description delete the user
-// @Param	username		path 	string	true		"The username you want to delete"
+// @Param	author		path 	string	true		"The username you want to delete"
+// @Param	project_id		path 	string	true		"The projectId you want to delete"
 // @Success 200 {string} delete success!
 // @Failure 403 parameter is invalid
 // @router / [delete]
 func (u *VoteController) Delete() {
 	rating := u.Ctx.Request.URL.Query()
-	log.Print(rating)
 
 	author := rating["author"][0]
 	projectId := ""
@@ -94,10 +93,13 @@ func (u *VoteController) Delete() {
 		u.Data["json"] = err.Error()
 	}
 
-	log.Print("author ", author, " projectId", projectId)
 	if author != "" && projectId != "" && err == nil {
-		models.DeleteVote(author, proId)
-		u.Data["json"] = "delete success!"
+		err = models.DeleteVote(author, proId)
+		if err != nil {
+			u.Data["json"] = err.Error()
+		} else {
+			u.Data["json"] = "delete success!"
+		}
 	} else {
 		u.Data["json"] = err.Error()
 	}

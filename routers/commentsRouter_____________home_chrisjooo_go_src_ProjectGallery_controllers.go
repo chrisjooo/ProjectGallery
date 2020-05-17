@@ -115,7 +115,7 @@ func init() {
             Filters: nil,
             Params: nil})
 
-    beego.GlobalControllerRouter["ProjectGallery/controllers:RatingController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:RatingController"],
+    beego.GlobalControllerRouter["ProjectGallery/controllers:VoteController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:VoteController"],
         beego.ControllerComments{
             Method: "Post",
             Router: `/`,
@@ -124,16 +124,7 @@ func init() {
             Filters: nil,
             Params: nil})
 
-    beego.GlobalControllerRouter["ProjectGallery/controllers:RatingController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:RatingController"],
-        beego.ControllerComments{
-            Method: "GetProjectRating",
-            Router: `/`,
-            AllowHTTPMethods: []string{"get"},
-            MethodParams: param.Make(),
-            Filters: nil,
-            Params: nil})
-
-    beego.GlobalControllerRouter["ProjectGallery/controllers:RatingController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:RatingController"],
+    beego.GlobalControllerRouter["ProjectGallery/controllers:VoteController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:VoteController"],
         beego.ControllerComments{
             Method: "Put",
             Router: `/`,
@@ -142,11 +133,20 @@ func init() {
             Filters: nil,
             Params: nil})
 
-    beego.GlobalControllerRouter["ProjectGallery/controllers:RatingController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:RatingController"],
+    beego.GlobalControllerRouter["ProjectGallery/controllers:VoteController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:VoteController"],
         beego.ControllerComments{
             Method: "Delete",
             Router: `/`,
             AllowHTTPMethods: []string{"delete"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["ProjectGallery/controllers:VoteController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:VoteController"],
+        beego.ControllerComments{
+            Method: "GetProjectVote",
+            Router: `/:projectId`,
+            AllowHTTPMethods: []string{"get"},
             MethodParams: param.Make(),
             Filters: nil,
             Params: nil})
