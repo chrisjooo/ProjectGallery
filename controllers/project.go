@@ -3,6 +3,7 @@ package controllers
 import (
 	"ProjectGallery/helpers"
 	"ProjectGallery/models"
+	"ProjectGallery/validations"
 	"strconv"
 
 	"strings"
@@ -23,37 +24,45 @@ func (u *ProjectController) Post() {
 	project := models.Project{}
 	u.ParseForm(&project)
 
-	uu, err := models.AddProject(project)
-	if err != nil {
-		u.Data["json"] = err.Error()
+	validationErr := validations.ProjectValidation(&project)
+	if validationErr != nil {
+		u.Data["json"] = validationErr.Error()
 	} else {
-		file, header, err := u.GetFile("project_pic")
-		if file != nil {
-			// get the filename
-			fileName := header.Filename
-			url := "./static/images/projects/"
-			fileType := fileName[strings.IndexByte(fileName, '.'):]
-			newFileName := url + strconv.FormatInt(uu.Id, 10) + fileType
-			project.ProjectPic = newFileName
-			err = u.SaveToFile("project_pic", newFileName)
-			if err != nil {
-				u.Data["json"] = err.Error()
-			} else {
-				err = helpers.CompressToPNG(newFileName)
+		uu, err := models.AddProject(project)
+		if err != nil {
+			u.Data["json"] = err.Error()
+		} else {
+			file, header, err := u.GetFile("project_pic")
+			if file != nil {
+				// get the filename
+				fileName := header.Filename
+				url := "./static/images/projects/"
+				fileType := fileName[strings.IndexByte(fileName, '.'):]
+				newFileName := url + strconv.FormatInt(uu.Id, 10) + fileType
+				project.ProjectPic = newFileName
+				err = u.SaveToFile("project_pic", newFileName)
 				if err != nil {
 					u.Data["json"] = err.Error()
 				} else {
-					//update
-					uu, err = models.UpdateProject(uu.Id, &project)
+					err = helpers.CompressToPNG(newFileName)
 					if err != nil {
 						u.Data["json"] = err.Error()
 					} else {
-						u.Data["json"] = uu
+						//update
+						uu, err = models.UpdateProject(uu.Id, &project)
+						if err != nil {
+							u.Data["json"] = err.Error()
+						} else {
+							u.Data["json"] = uu
+						}
 					}
 				}
+			} else {
+				u.Data["json"] = uu
 			}
 		}
 	}
+
 	u.ServeJSON()
 }
 
@@ -109,37 +118,42 @@ func (u *ProjectController) Put() {
 			project := models.Project{}
 			u.ParseForm(&project)
 
-			file, header, err := u.GetFile("project_pic") // where <<this>> is the controller and <<file>> the id of your form field
-			if file != nil {
-				// get the filename
-				fileName := header.Filename
-				url := "./static/images/projects/"
-				fileType := fileName[strings.IndexByte(fileName, '.'):]
-				newFileName := url + strconv.FormatInt(id, 10) + fileType
+			validationErr := validations.ProjectValidation(&project)
+			if validationErr != nil {
+				u.Data["json"] = validationErr.Error()
+			} else {
+				file, header, err := u.GetFile("project_pic") // where <<this>> is the controller and <<file>> the id of your form field
+				if file != nil {
+					// get the filename
+					fileName := header.Filename
+					url := "./static/images/projects/"
+					fileType := fileName[strings.IndexByte(fileName, '.'):]
+					newFileName := url + strconv.FormatInt(id, 10) + fileType
 
-				err = u.SaveToFile("project_pic", newFileName)
-				if err != nil {
-					u.Data["json"] = err.Error()
-				} else {
-					err = helpers.CompressToPNG(newFileName)
+					err = u.SaveToFile("project_pic", newFileName)
 					if err != nil {
 						u.Data["json"] = err.Error()
 					} else {
-						project.ProjectPic = newFileName
-						uu, err1 := models.UpdateProject(id, &project)
-						if err1 != nil {
-							u.Data["json"] = err1.Error()
+						err = helpers.CompressToPNG(newFileName)
+						if err != nil {
+							u.Data["json"] = err.Error()
 						} else {
-							u.Data["json"] = uu
+							project.ProjectPic = newFileName
+							uu, err1 := models.UpdateProject(id, &project)
+							if err1 != nil {
+								u.Data["json"] = err1.Error()
+							} else {
+								u.Data["json"] = uu
+							}
 						}
 					}
-				}
-			} else {
-				uu, err := models.UpdateProject(id, &project)
-				if err != nil {
-					u.Data["json"] = err.Error()
 				} else {
-					u.Data["json"] = uu
+					uu, err := models.UpdateProject(id, &project)
+					if err != nil {
+						u.Data["json"] = err.Error()
+					} else {
+						u.Data["json"] = uu
+					}
 				}
 			}
 		}

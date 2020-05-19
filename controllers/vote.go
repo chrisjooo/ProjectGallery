@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"ProjectGallery/models"
+	"ProjectGallery/validations"
 	"encoding/json"
 	"strconv"
 
@@ -20,12 +21,19 @@ type VoteController struct {
 func (u *VoteController) Post() {
 	var rating models.Vote
 	json.Unmarshal(u.Ctx.Input.RequestBody, &rating)
-	newrating, err := models.AddVote(rating)
-	if err != nil {
-		u.Data["json"] = err.Error()
+
+	validationErr := validations.VoteValidation(&rating)
+	if validationErr != nil {
+		u.Data["json"] = validationErr.Error()
 	} else {
-		u.Data["json"] = newrating
+		newrating, err := models.AddVote(rating)
+		if err != nil {
+			u.Data["json"] = err.Error()
+		} else {
+			u.Data["json"] = newrating
+		}
 	}
+
 	u.ServeJSON()
 }
 
@@ -59,16 +67,20 @@ func (u *VoteController) Put() {
 	var rating models.Vote
 	json.Unmarshal(u.Ctx.Input.RequestBody, &rating)
 
-	author, projectId := rating.Author, rating.ProjectId
-	if author != "" && projectId != 0 {
-		uu, err := models.UpdateVote(&rating)
-		if err != nil {
-			u.Data["json"] = err.Error()
-		} else {
-			u.Data["json"] = uu
+	validationErr := validations.VoteValidation(&rating)
+	if validationErr != nil {
+		u.Data["json"] = validationErr.Error()
+	} else {
+		author, projectId := rating.Author, rating.ProjectId
+		if author != "" && projectId != 0 {
+			uu, err := models.UpdateVote(&rating)
+			if err != nil {
+				u.Data["json"] = err.Error()
+			} else {
+				u.Data["json"] = uu
+			}
 		}
 	}
-
 	u.ServeJSON()
 }
 
