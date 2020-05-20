@@ -19,7 +19,8 @@ type Vote struct {
 }
 
 func AddVote(u Vote) (*Vote, error) {
-	log.Print(u)
+	//ORM database
+	o := orm.NewOrm()
 
 	_, err := GetProjectById(u.ProjectId)
 	if err != nil {
@@ -36,26 +37,29 @@ func AddVote(u Vote) (*Vote, error) {
 		return nil, err
 	}
 
-	//ORM database
-	o := orm.NewOrm()
-	temp := Vote{Author: u.Author, ProjectId: u.ProjectId}
-	err = o.Read(&temp, "Author", "ProjectId")
-	if err != nil && err != orm.ErrNoRows {
-		return nil, err
-	}
+	_, err = GetVote(u.Author, u.ProjectId)
+	if err != nil || err == orm.ErrNoRows {
 
-	newId, err := o.Insert(&u)
-	if err == nil {
-		//successfully inserted
-		u.Id = newId
-		return &u, nil
-	} else {
-		err = o.Read(&u)
-		if err != nil {
+		temp := Vote{Author: u.Author, ProjectId: u.ProjectId}
+		err = o.Read(&temp, "Author", "ProjectId")
+		if err != nil && err != orm.ErrNoRows {
 			return nil, err
 		}
-	}
 
+		newId, err := o.Insert(&u)
+		if err == nil {
+			//successfully inserted
+			u.Id = newId
+			return &u, nil
+		} else {
+			err = o.Read(&u)
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		return nil, errors.New("Vote already exist")
+	}
 	return &u, err
 }
 
@@ -72,31 +76,37 @@ func GetVote(author string, projectId int64) (u *Vote, err error) {
 
 }
 
-func GetTotalVote(projectID int64) int64 {
+func GetTotalVote(projectID int64) (error, int64) {
 
 	o := orm.NewOrm()
-	var votes []*Vote
-
-	nums, err := o.Raw("SELECT * FROM vote WHERE projectID = ? AND vote = 1", projectID).QueryRows(&votes)
+	_, err := GetProjectById(projectID)
 	if err != nil {
-		return 0
+		if err == orm.ErrNoRows {
+			return errors.New("project not found"), 0
+		}
+		return err, 0
 	}
 
-	return int64(nums)
+	var total int
+
+	err = o.Raw("SELECT COUNT(id) FROM vote WHERE project_id = ? AND vote = 1", projectID).QueryRow(&total)
+	if err != nil {
+		log.Printf("err: %v", err)
+		return err, 0
+	}
+
+	return nil, int64(total)
 }
 
-func UpdateVote(author string, projectId int64, uu *Vote) (u *Vote, err error) {
+func UpdateVote(uu *Vote) (u *Vote, err error) {
 	o := orm.NewOrm()
 
-	u, err = GetVote(author, projectId)
-
-	log.Print(*u)
+	u, err = GetVote(uu.Author, uu.ProjectId)
 
 	if err == nil {
 		if uu.Vote != u.Vote {
 			u.Vote = uu.Vote
 		}
-		log.Print("REACHED HERE")
 		// ORM Update
 		_, err1 := o.Update(u)
 		log.Print(u, err)
@@ -116,11 +126,22 @@ func UpdateVote(author string, projectId int64, uu *Vote) (u *Vote, err error) {
 	}
 }
 
-func DeleteVote(author string, projectId int64) {
+func DeleteVote(author string, projectId int64) error {
 	o := orm.NewOrm()
-	_, err := o.Delete(&Vote{Author: author, ProjectId: projectId}, "author", "projectId")
+
+	_, err := GetVote(author, projectId)
+	if err != nil {
+		if err == orm.ErrNoRows {
+			return errors.New("vote not found")
+		}
+		return err
+	}
+
+	_, err = o.Delete(&Vote{Author: author, ProjectId: projectId}, "author", "projectId")
 
 	if err != nil {
+		return err
 		log.Fatal("delete Vote failed")
 	}
+	return nil
 }

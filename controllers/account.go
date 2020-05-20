@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"ProjectGallery/helpers"
 	"ProjectGallery/models"
+	"ProjectGallery/validations"
 	"encoding/json"
-	"log"
+	"strings"
 
 	"github.com/astaxie/beego"
 )
@@ -20,13 +22,18 @@ type AccountController struct {
 func (u *AccountController) Post() {
 	var account models.Account
 	json.Unmarshal(u.Ctx.Input.RequestBody, &account)
-	log.Print(account)
-	newAcc, err := models.AddAccount(account)
-	if err != nil {
-		u.Data["json"] = err.Error()
+	validationErr := validations.AccountValidation(&account)
+	if validationErr == nil {
+		newAcc, err := models.AddAccount(account)
+		if err != nil {
+			u.Data["json"] = err.Error()
+		} else {
+			u.Data["json"] = newAcc
+		}
 	} else {
-		u.Data["json"] = newAcc
+		u.Data["json"] = validationErr.Error()
 	}
+
 	u.ServeJSON()
 }
 
@@ -48,7 +55,6 @@ func (u *AccountController) GetAll() {
 // @router /:username [get]
 func (u *AccountController) GetByUsername() {
 	username := u.GetString(":username")
-	log.Print("\nusername : ", username, "\n")
 	if username != "" {
 		account, err := models.GetAccount(username)
 		if err != nil {
@@ -75,35 +81,44 @@ func (u *AccountController) Put() {
 
 		u.ParseForm(&account)
 
-		log.Printf("account: %v\n", account)
+		validationErr := validations.AccountValidation(&account)
+		if validationErr != nil {
+			u.Data["json"] = validationErr.Error()
+		} else {
+			file, header, err := u.GetFile("profile_pic") // where <<this>> is the controller and <<file>> the id of your form field
+			if file != nil {
+				// get the filename
+				fileName := header.Filename
+				url := "./static/images/accounts/"
 
-		file, header, err := u.GetFile("profile_pic") // where <<this>> is the controller and <<file>> the id of your form field
-		log.Printf("\nGoing through err: %v", err)
-		if file != nil {
-			// get the filename
-			fileName := header.Filename
-			log.Printf("\nfilename: %v", fileName)
-			url := "./static/images/accounts/" + fileName
-			// save to server
-			err = u.SaveToFile("profile_pic", url)
-			if err != nil {
-				u.Data["json"] = err.Error()
+				fileType := fileName[strings.IndexByte(fileName, '.'):]
+				newFileName := url + username + fileType
+				err = u.SaveToFile("profile_pic", newFileName)
+				if err != nil {
+					u.Data["json"] = err.Error()
+				} else {
+					//helper function
+					err = helpers.CompressToPNG(newFileName)
+					if err != nil {
+						u.Data["json"] = err.Error()
+					} else {
+						account.ProfilePic = newFileName
+
+						uu, err1 := models.UpdateAccount(username, &account)
+						if err1 != nil {
+							u.Data["json"] = err1.Error()
+						} else {
+							u.Data["json"] = uu
+						}
+					}
+				}
 			} else {
-				log.Printf("i guess the images shouldve been saved?")
-				account.ProfilePic = url
 				uu, err := models.UpdateAccount(username, &account)
 				if err != nil {
 					u.Data["json"] = err.Error()
 				} else {
 					u.Data["json"] = uu
 				}
-			}
-		} else {
-			uu, err := models.UpdateAccount(username, &account)
-			if err != nil {
-				u.Data["json"] = err.Error()
-			} else {
-				u.Data["json"] = uu
 			}
 		}
 	}
@@ -118,8 +133,12 @@ func (u *AccountController) Put() {
 // @router /:username [delete]
 func (u *AccountController) Delete() {
 	username := u.GetString(":username")
-	models.DeleteAccount(username)
-	u.Data["json"] = "delete success!"
+	err := models.DeleteAccount(username)
+	if err != nil {
+		u.Data["json"] = err.Error()
+	} else {
+		u.Data["json"] = "delete success!"
+	}
 	u.ServeJSON()
 }
 

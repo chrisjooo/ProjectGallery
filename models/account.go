@@ -30,8 +30,6 @@ type AccList struct {
 }
 
 func AddAccount(u Account) (*Account, error) {
-	log.Print(u)
-	log.Println("creating account")
 	password := helpers.HashAndSalt([]byte(u.Password))
 	u.Password = password
 	//ORM database
@@ -44,17 +42,13 @@ func AddAccount(u Account) (*Account, error) {
 		log.Print(err)
 		return nil, errors.New("username already exist")
 	}
-	log.Print("sampai sini")
 
 	newId, err := o.Insert(&u)
 	if err == nil {
 		//successfully inserted
 		u.Id = newId
-		log.Print("new: ", u)
 		return &u, nil
 	} else {
-		log.Print("error here")
-		log.Printf("\n%v\n", err)
 		return nil, errors.New("error inserting account")
 	}
 
@@ -68,8 +62,11 @@ func GetAccount(username string) (u *Account, err error) {
 	acc := Account{Username: username}
 	err = o.Read(&acc, "Username")
 	if err != nil {
+		if err == orm.ErrNoRows {
+			return nil, errors.New("Account not exists")
+		}
 		log.Print("read account error: ", err)
-		return nil, errors.New("Account not exists")
+		return nil, err
 	} else {
 		return &acc, nil
 	}
@@ -95,8 +92,6 @@ func UpdateAccount(username string, uu *Account) (a *Account, err error) {
 
 	u, err := GetAccount(username)
 
-	log.Print(*u)
-
 	if err == nil {
 		if uu.Email != "" {
 			u.Email = uu.Email
@@ -114,7 +109,6 @@ func UpdateAccount(username string, uu *Account) (a *Account, err error) {
 		if uu.ProfilePic != "" {
 			u.ProfilePic = uu.ProfilePic
 		}
-		log.Print("REACHED HERE")
 		// ORM Update
 		_, err1 := o.Update(u)
 		log.Print(u, err)
@@ -126,17 +120,31 @@ func UpdateAccount(username string, uu *Account) (a *Account, err error) {
 			return nil, err1
 		}
 	} else {
-		return nil, errors.New("Account Not Exist")
+		if err == orm.ErrNoRows {
+			return nil, errors.New("Account not exist")
+		}
+		return nil, err
 	}
 }
 
-func DeleteAccount(username string) {
+func DeleteAccount(username string) error {
 	o := orm.NewOrm()
-	_, err := o.Delete(&Account{Username: username}, "Username")
+
+	_, err := GetAccount(username)
+	if err != nil {
+		if err == orm.ErrNoRows {
+			return errors.New("Account not existed")
+		}
+		return err
+	}
+
+	_, err = o.Delete(&Account{Username: username}, "Username")
 
 	if err != nil {
 		log.Fatal("delete Account failed")
+		return err
 	}
+	return nil
 }
 
 func Login(username, password string) (bool, error) {
