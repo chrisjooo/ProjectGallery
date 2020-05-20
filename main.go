@@ -2,6 +2,8 @@ package main
 
 import (
 	_ "ProjectGallery/routers"
+	"ProjectGallery/scheduler"
+	"log"
 
 	"github.com/astaxie/beego"
 
@@ -13,16 +15,45 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+// var Pool *redis.Pool
+
 func main() {
 	if beego.BConfig.RunMode == "dev" {
 		beego.BConfig.WebConfig.DirectoryIndex = true
 		beego.BConfig.WebConfig.StaticDir["/swagger"] = "swagger"
 	}
 
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	log.Fatal("Error loading .env file")
+	log.Printf("\ninitialize redis\n")
+
+	// redisUrls := beego.AppConfig.String("redisurls")
+	// redisString := fmt.Sprintf("%s:6379", redisUrls)
+
+	// Pool = &redis.Pool{
+	// 	MaxIdle:     10,
+	// 	IdleTimeout: 240 * time.Second,
+	// 	Dial: func() (redis.Conn, error) {
+	// 		return redis.Dial("tcp", "localhost:6379")
+	// 	},
 	// }
+
+	// conn, err := redis.Dial("tcp", "localhost:6379")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer conn.Close()
+
+	// s, err := redis.String(conn.Do("PING"))
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// log.Printf("masuk ping: %s", s)
+
+	// log.Printf("test ping redis\n")
+	// err := scheduler.TestPingRedis()
+	// log.Printf("error pinging: %v", err)
+
+	err1 := scheduler.TestPingRedis()
+	log.Printf("%v", err1)
 
 	dbUser := beego.AppConfig.String("mysqluser")
 	dbPwd := beego.AppConfig.String("mysqlpass")

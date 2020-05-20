@@ -4,9 +4,10 @@ runmode = dev
 autorender = false
 copyrequestbody = true
 EnableDocs = true
-sqlconn = 
 
-dbDriver=mysql
-dbUser=root
-dbPass=
-dbName= project_gallery
+mysqluser = "root"
+mysqlpass = ""
+mysqlurls = "localhost"
+mysqldb   = "project_gallery"
+
+redisurls = "localhost"

@@ -26,6 +26,21 @@ type ProjectList struct {
 	Data       []*Project `json:"data"`
 }
 
+type FilteredProject struct {
+	Id          int64     `orm:"PK" json:"id" form:"-"`
+	Name        string    `json:"name" form:"name"`
+	Author      string    `json:"author" form:"author"`
+	ProjectPic  string    `json:"project_pic" form:"project_pic"`
+	Description string    `json:"description" form:"description"`
+	CreatedAt   time.Time `orm:"auto_now_add;type(datetime)" json:"created_at"`
+	TotalLike   int64     `json:"total_like"`
+}
+
+type FilteredProjectList struct {
+	NumProject int64              `json:"total_project"`
+	Data       []*FilteredProject `json:"data"`
+}
+
 func AddProject(u Project) (*Project, error) {
 	//ORM database
 	o := orm.NewOrm()
@@ -140,4 +155,20 @@ func DeleteProject(Id int64) error {
 		return err
 	}
 	return nil
+}
+
+func FilterMostLikeProject() *FilteredProjectList {
+	o := orm.NewOrm()
+	list := &FilteredProjectList{}
+	var projects []*FilteredProject
+	sql := "SELECT project.id, project.name, project.author, project.project_pic, project.description, project.created_at, (SELECT COUNT(vote.id) FROM vote WHERE vote.vote = 1 AND vote.project_id = project.id) as total_like FROM project ORDER BY total_like DESC;"
+	num, err := o.Raw(sql).QueryRows(&projects)
+	if err != nil {
+		log.Print("error query: ", err)
+		return nil
+	}
+	list.Data = projects
+	list.NumProject = num
+
+	return list
 }
