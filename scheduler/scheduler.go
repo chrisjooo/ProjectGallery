@@ -13,9 +13,7 @@ import (
 )
 
 func TestPingRedis() error {
-	log.Printf("masuk testpingredis")
 	conn := helpers.NewPool().Get()
-	log.Printf("masuk setelah testpingredis")
 	defer conn.Close()
 
 	response, err := conn.Do("PING")
@@ -29,22 +27,17 @@ func TestPingRedis() error {
 func CacheMostLiked(ctx context.Context) {
 	//caching most liked project every 1 hour
 	ctx, _ = context.WithTimeout(ctx, time.Second*30)
-	log.Printf("masuk sini setiap 1 menit\n")
 	conn := helpers.NewPool().Get()
 	defer conn.Close()
-	log.Printf("test sudah\n")
 	_, err := conn.Do("FLUSHALL")
 	if err != nil {
 		log.Printf("error flushing: %v\n", err)
 	}
-	log.Printf("kelar flushall\n")
 	projectList := models.FilterMostLikeProject()
-	log.Printf("test sudah masuk sini\n")
 	_, err = conn.Do("HSET", "filtered-data", "data", projectList)
 	if err != nil {
 		log.Printf("Error setting cache: %v", err)
 	}
-	log.Printf("kelar\n")
 
 	select {
 	case <-ctx.Done():

@@ -36,9 +36,10 @@ func main() {
 		fmt.Println(err)
 	}
 
-	beego.Run()
 	err1 := scheduler.TestPingRedis()
 	log.Printf("%v", err1)
+
+	beego.Run()
 
 	scheduler.InitScheduler()
 }

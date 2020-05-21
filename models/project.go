@@ -173,9 +173,6 @@ func FilterMostLikeProject() *FilteredProjectList {
 	list.Data = projects
 	list.NumProject = num
 
-	log.Printf("%v\n", list.Data)
-	log.Printf("%v\n", list.NumProject)
-
 	return list
 }
 
@@ -189,13 +186,23 @@ func GetMostLikeProject() *FilteredProjectList {
 	if err != nil {
 		log.Printf("Error getting cache: %v\n", err)
 	} else {
-		err = json.Unmarshal(v, data)
-		return data
+		if err := json.Unmarshal(v, data); err != nil {
+			log.Printf("err getmostlikeproject: %v", err)
+		}
+		if data != nil {
+			return data
+		}
 	}
 	//get from DB
 	data = FilterMostLikeProject()
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("error marshaling data")
+	}
+
 	//set cache
-	_, err = conn.Do("HSET", "filtered-data", &data)
+	_, err = conn.Do("HSET", "filtered-data", "data", jsonData)
 	if err != nil {
 		log.Printf("error setting cache from model: %v", err)
 	}
