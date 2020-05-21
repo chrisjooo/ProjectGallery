@@ -1,11 +1,14 @@
 package models
 
 import (
+	"ProjectGallery/helpers"
+	"encoding/json"
 	"errors"
 	"log"
 	"time"
 
 	"github.com/astaxie/beego/orm"
+	"github.com/gomodule/redigo/redis"
 )
 
 func init() {
@@ -170,5 +173,32 @@ func FilterMostLikeProject() *FilteredProjectList {
 	list.Data = projects
 	list.NumProject = num
 
+	log.Printf("%v\n", list.Data)
+	log.Printf("%v\n", list.NumProject)
+
 	return list
+}
+
+func GetMostLikeProject() *FilteredProjectList {
+	//get from cache
+	data := &FilteredProjectList{}
+	conn := helpers.NewPool().Get()
+	defer conn.Close()
+
+	v, err := redis.Bytes(conn.Do("HGET", "filtered-data", "data"))
+	if err != nil {
+		log.Printf("Error getting cache: %v\n", err)
+	} else {
+		err = json.Unmarshal(v, data)
+		return data
+	}
+	//get from DB
+	data = FilterMostLikeProject()
+	//set cache
+	_, err = conn.Do("HSET", "filtered-data", &data)
+	if err != nil {
+		log.Printf("error setting cache from model: %v", err)
+	}
+
+	return data
 }

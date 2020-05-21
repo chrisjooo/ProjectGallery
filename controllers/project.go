@@ -102,6 +102,17 @@ func (u *ProjectController) GetById() {
 	u.ServeJSON()
 }
 
+// @Title GetLikeProjects
+// @Description get all projects filtered by likes
+// @Success 200 {object} models.Project
+// @router /filter/like [get]
+func (u *ProjectController) GetLikeProjects() {
+	projects := models.GetMostLikeProject()
+	u.Data["json"] = projects
+
+	u.ServeJSON()
+}
+
 // @Title Update
 // @Description update the Project
 // @Param	id		path 	int	true		"The id project you want to update"

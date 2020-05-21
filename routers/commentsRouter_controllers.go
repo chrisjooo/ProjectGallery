@@ -108,6 +108,15 @@ func init() {
 
     beego.GlobalControllerRouter["ProjectGallery/controllers:ProjectController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:ProjectController"],
         beego.ControllerComments{
+            Method: "GetLikeProjects",
+            Router: `/filter/like`,
+            AllowHTTPMethods: []string{"get"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["ProjectGallery/controllers:ProjectController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:ProjectController"],
+        beego.ControllerComments{
             Method: "GetById",
             Router: `/id/:id`,
             AllowHTTPMethods: []string{"get"},
