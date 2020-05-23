@@ -8,5 +8,5 @@ sqlconn =
 
 dbDriver=mysql
 dbUser=root
-dbPass=
+dbPass=password
 dbName= project_gallery
