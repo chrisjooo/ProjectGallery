@@ -75,6 +75,18 @@ func (u *AccountController) GetByUsername() {
 // @Failure 403 :username is null
 // @router /:username [put]
 func (u *AccountController) Put() {
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.FetchAuth(tokenAuth)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 	username := u.GetString(":username")
 	if username != "" {
 
@@ -133,10 +145,20 @@ func (u *AccountController) Put() {
 // @Failure 403 username is empty
 // @router /:username [delete]
 func (u *AccountController) Delete() {
-	// bearToken := u.Ctx.Request.Header.Get("Authorization")
-
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.FetchAuth(tokenAuth)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 	username := u.GetString(":username")
-	err := models.DeleteAccount(username)
+	err = models.DeleteAccount(username)
 	if err != nil {
 		u.Data["json"] = err.Error()
 	} else {
