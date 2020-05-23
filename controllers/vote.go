@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"ProjectGallery/helpers"
 	"ProjectGallery/models"
 	"ProjectGallery/validations"
 	"encoding/json"
@@ -19,6 +20,18 @@ type VoteController struct {
 // @Success 200 {object} models.Vote
 // @router / [post]
 func (u *VoteController) Post() {
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.FetchAuth(tokenAuth)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 	var rating models.Vote
 	json.Unmarshal(u.Ctx.Input.RequestBody, &rating)
 
@@ -64,6 +77,18 @@ func (u *VoteController) GetProjectVote() {
 // @Failure 403 body is null
 // @router / [put]
 func (u *VoteController) Put() {
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.FetchAuth(tokenAuth)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 	var rating models.Vote
 	json.Unmarshal(u.Ctx.Input.RequestBody, &rating)
 
@@ -92,6 +117,18 @@ func (u *VoteController) Put() {
 // @Failure 403 parameter is invalid
 // @router / [delete]
 func (u *VoteController) Delete() {
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.FetchAuth(tokenAuth)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 	rating := u.Ctx.Request.URL.Query()
 
 	author := rating["author"][0]

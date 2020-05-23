@@ -115,6 +115,15 @@ func init() {
             Filters: nil,
             Params: nil})
 
+    beego.GlobalControllerRouter["ProjectGallery/controllers:ProjectController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:ProjectController"],
+        beego.ControllerComments{
+            Method: "GetLikeProjects",
+            Router: `/like/`,
+            AllowHTTPMethods: []string{"get"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
     beego.GlobalControllerRouter["ProjectGallery/controllers:VoteController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:VoteController"],
         beego.ControllerComments{
             Method: "Post",

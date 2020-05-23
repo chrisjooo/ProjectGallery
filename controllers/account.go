@@ -74,6 +74,18 @@ func (u *AccountController) GetByUsername() {
 // @Failure 403 :username is null
 // @router /:username [put]
 func (u *AccountController) Put() {
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.FetchAuth(tokenAuth)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 	username := u.GetString(":username")
 	if username != "" {
 
@@ -132,8 +144,20 @@ func (u *AccountController) Put() {
 // @Failure 403 username is empty
 // @router /:username [delete]
 func (u *AccountController) Delete() {
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.FetchAuth(tokenAuth)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 	username := u.GetString(":username")
-	err := models.DeleteAccount(username)
+	err = models.DeleteAccount(username)
 	if err != nil {
 		u.Data["json"] = err.Error()
 	} else {
@@ -153,20 +177,49 @@ func (u *AccountController) Login() {
 	var account models.Account
 	json.Unmarshal(u.Ctx.Input.RequestBody, &account)
 	check, err := models.Login(account.Username, account.Password)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 
-	if check {
-		u.Data["json"] = "login success"
+	err = helpers.CreateAuth(account.Username, check)
+
+	if err == nil {
+		u.Data["json"] = map[string]string{
+			"username":     account.Username,
+			"access_token": check.AccessToken,
+		}
 	} else {
 		u.Data["json"] = err.Error()
 	}
 	u.ServeJSON()
 }
 
-// // @Title logout
-// // @Description Logs out current logged in user session
-// // @Success 200 {string} logout success
-// // @router /logout [get]
-// func (u *AccountController) Logout() {
-// 	u.Data["json"] = "logout success"
-// 	u.ServeJSON()
-// }
+// @Title logout
+// @Description Logs out current logged in user session
+// @Success 200 {string} logout success
+// @router /logout [get]
+func (u *AccountController) Logout() {
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.FetchAuth(tokenAuth)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.DeleteAuth(tokenAuth.Username, tokenAuth.AccessUuid)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+
+	u.Data["json"] = "logout success"
+	u.ServeJSON()
+}
