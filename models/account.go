@@ -147,22 +147,29 @@ func DeleteAccount(username string) error {
 	return nil
 }
 
-func Login(username, password string) (bool, error) {
+func Login(username, password string) (*helpers.TokenDetails, error) {
 	o := orm.NewOrm()
 	acc := Account{Username: username}
 
 	err := o.Read(&acc, "username")
 
 	if err != nil {
-		return false, errors.New("InvalId username or password")
+		return nil, errors.New("Invalid username or password")
 	}
 
 	check := helpers.ComparePassword(acc.Password, []byte(password))
-	if check {
-		return true, nil
-	} else {
-		return false, errors.New("InvalId username or password")
+	if !check {
+		return nil, errors.New("Invalid username or password")
 	}
+
+	//JWT TOKEN
+
+	token, err := helpers.CreateToken(acc.Username)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+
 }
 
 // func Logout(username string) (error) {

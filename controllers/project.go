@@ -21,6 +21,18 @@ type ProjectController struct {
 // @Success 200 {object} models.Project
 // @router / [post]
 func (u *ProjectController) Post() {
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.FetchAuth(tokenAuth)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 	project := models.Project{}
 	u.ParseForm(&project)
 
@@ -102,6 +114,17 @@ func (u *ProjectController) GetById() {
 	u.ServeJSON()
 }
 
+// @Title GetLikeProjects
+// @Description get all projects filtered by likes
+// @Success 200 {object} models.Project
+// @router /filter/like [get]
+func (u *ProjectController) GetLikeProjects() {
+	projects := models.GetMostLikeProject()
+	u.Data["json"] = projects
+
+	u.ServeJSON()
+}
+
 // @Title Update
 // @Description update the Project
 // @Param	id		path 	int	true		"The id project you want to update"
@@ -110,6 +133,18 @@ func (u *ProjectController) GetById() {
 // @Failure 403 :id is null
 // @router /:id [put]
 func (u *ProjectController) Put() {
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.FetchAuth(tokenAuth)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 	id, err := u.GetInt64(":id")
 	if err != nil {
 		u.Data["json"] = err.Error()
@@ -169,6 +204,18 @@ func (u *ProjectController) Put() {
 // @Failure 403 id is empty
 // @router /:id [delete]
 func (u *ProjectController) Delete() {
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.FetchAuth(tokenAuth)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 	id, err := u.GetInt64(":id")
 	if err != nil {
 		u.Data["json"] = err.Error()

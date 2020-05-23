@@ -1,11 +1,14 @@
 package models
 
 import (
+	"ProjectGallery/helpers"
+	"encoding/json"
 	"errors"
 	"log"
 	"time"
 
 	"github.com/astaxie/beego/orm"
+	"github.com/gomodule/redigo/redis"
 )
 
 func init() {
@@ -24,6 +27,21 @@ type Project struct {
 type ProjectList struct {
 	NumProject int64      `json:"total_project"`
 	Data       []*Project `json:"data"`
+}
+
+type FilteredProject struct {
+	Id          int64     `orm:"PK" json:"id" form:"-"`
+	Name        string    `json:"name" form:"name"`
+	Author      string    `json:"author" form:"author"`
+	ProjectPic  string    `json:"project_pic" form:"project_pic"`
+	Description string    `json:"description" form:"description"`
+	CreatedAt   time.Time `orm:"auto_now_add;type(datetime)" json:"created_at"`
+	TotalLike   int64     `json:"total_like"`
+}
+
+type FilteredProjectList struct {
+	NumProject int64              `json:"total_project"`
+	Data       []*FilteredProject `json:"data"`
 }
 
 func AddProject(u Project) (*Project, error) {
@@ -140,4 +158,54 @@ func DeleteProject(Id int64) error {
 		return err
 	}
 	return nil
+}
+
+func FilterMostLikeProject() *FilteredProjectList {
+	o := orm.NewOrm()
+	list := &FilteredProjectList{}
+	var projects []*FilteredProject
+	sql := "SELECT project.id, project.name, project.author, project.project_pic, project.description, project.created_at, (SELECT COUNT(vote.id) FROM vote WHERE vote.vote = 1 AND vote.project_id = project.id) as total_like FROM project ORDER BY total_like DESC;"
+	num, err := o.Raw(sql).QueryRows(&projects)
+	if err != nil {
+		log.Print("error query: ", err)
+		return nil
+	}
+	list.Data = projects
+	list.NumProject = num
+
+	return list
+}
+
+func GetMostLikeProject() *FilteredProjectList {
+	//get from cache
+	data := &FilteredProjectList{}
+	conn := helpers.NewPool().Get()
+	defer conn.Close()
+
+	v, err := redis.Bytes(conn.Do("HGET", "filtered-data", "data"))
+	if err != nil {
+		log.Printf("Error getting cache: %v\n", err)
+	} else {
+		if err := json.Unmarshal(v, data); err != nil {
+			log.Printf("err GetMostLikeProject: %v", err)
+		}
+		if data != nil {
+			return data
+		}
+	}
+	//get from DB
+	data = FilterMostLikeProject()
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("error marshaling data")
+	}
+
+	//set cache
+	_, err = conn.Do("HSET", "filtered-data", "data", jsonData)
+	if err != nil {
+		log.Printf("error setting cache from model: %v", err)
+	}
+
+	return data
 }
