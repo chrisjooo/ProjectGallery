@@ -61,6 +61,15 @@ func init() {
             Filters: nil,
             Params: nil})
 
+    beego.GlobalControllerRouter["ProjectGallery/controllers:AccountController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:AccountController"],
+        beego.ControllerComments{
+            Method: "Logout",
+            Router: `/logout`,
+            AllowHTTPMethods: []string{"get"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
     beego.GlobalControllerRouter["ProjectGallery/controllers:MainController"] = append(beego.GlobalControllerRouter["ProjectGallery/controllers:MainController"],
         beego.ControllerComments{
             Method: "Ping",

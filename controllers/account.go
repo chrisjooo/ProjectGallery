@@ -5,6 +5,7 @@ import (
 	"ProjectGallery/models"
 	"ProjectGallery/validations"
 	"encoding/json"
+	"log"
 	"strings"
 
 	"github.com/astaxie/beego"
@@ -132,6 +133,8 @@ func (u *AccountController) Put() {
 // @Failure 403 username is empty
 // @router /:username [delete]
 func (u *AccountController) Delete() {
+	// bearToken := u.Ctx.Request.Header.Get("Authorization")
+
 	username := u.GetString(":username")
 	err := models.DeleteAccount(username)
 	if err != nil {
@@ -153,20 +156,50 @@ func (u *AccountController) Login() {
 	var account models.Account
 	json.Unmarshal(u.Ctx.Input.RequestBody, &account)
 	check, err := models.Login(account.Username, account.Password)
+	if err != nil {
+		log.Printf("mengapa?? %v", err)
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 
-	if check {
-		u.Data["json"] = "login success"
+	err = helpers.CreateAuth(account.Username, check)
+
+	if err == nil {
+		u.Data["json"] = map[string]string{
+			"username":     account.Username,
+			"access_token": check.AccessToken,
+		}
 	} else {
 		u.Data["json"] = err.Error()
 	}
 	u.ServeJSON()
 }
 
-// // @Title logout
-// // @Description Logs out current logged in user session
-// // @Success 200 {string} logout success
-// // @router /logout [get]
-// func (u *AccountController) Logout() {
-// 	u.Data["json"] = "logout success"
-// 	u.ServeJSON()
-// }
+// @Title logout
+// @Description Logs out current logged in user session
+// @Success 200 {string} logout success
+// @router /logout [get]
+func (u *AccountController) Logout() {
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.FetchAuth(tokenAuth)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.DeleteAuth(tokenAuth.Username, tokenAuth.AccessUuid)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
+
+	u.Data["json"] = "logout success"
+	u.ServeJSON()
+}

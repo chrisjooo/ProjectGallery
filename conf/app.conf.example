@@ -11,3 +11,4 @@ mysqlurls = "localhost"
 mysqldb   = "project_gallery"
 
 redisurls = "localhost"
+ACCESS_SECRET = "ProjectGallery"
