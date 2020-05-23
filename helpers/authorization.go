@@ -30,7 +30,6 @@ func CreateToken(username string) (*TokenDetails, error) {
 	td.AccessUuid = uuid.NewV4().String()
 
 	secret := beego.AppConfig.String("ACCESS_SECRET")
-	log.Printf("secret: %v", secret)
 	atClaims := jwt.MapClaims{}
 	atClaims["authorized"] = true
 	atClaims["access_uuid"] = td.AccessUuid
@@ -42,7 +41,6 @@ func CreateToken(username string) (*TokenDetails, error) {
 		log.Printf("error CreateToken: %v\n", err)
 		return nil, err
 	}
-	log.Printf("token: %v\n", token)
 	td.AccessToken = token
 	return td, nil
 }
@@ -54,7 +52,6 @@ func CreateAuth(username string, td *TokenDetails) error {
 	temp := time.Now().Unix()
 	exp := td.AccessExpires - temp
 
-	log.Printf("entering token to redis")
 	_, err := conn.Do("HSET", username, td.AccessUuid, td.AccessToken)
 	if err != nil {
 		log.Printf("error inserting token to redis: %v", err)
@@ -71,11 +68,8 @@ func CreateAuth(username string, td *TokenDetails) error {
 
 func ExtractToken(ctx *context.Context) string {
 	bearToken := ctx.Request.Header.Get("Authorization")
-	log.Printf("bearToken: %v", bearToken)
 	strArr := strings.Split(bearToken, " ")
 	if len(strArr) == 2 {
-		log.Printf("ExtractToken return: %v\n", strArr[1])
-		log.Printf("what lies here %v\n", strArr[0])
 		return strArr[1]
 	}
 	return ""
@@ -84,7 +78,6 @@ func ExtractToken(ctx *context.Context) string {
 //Verify only
 func VerifyToken(ctx *context.Context) (*jwt.Token, error) {
 	secret := beego.AppConfig.String("ACCESS_SECRET")
-	log.Printf("VerifyToken secret: %v", secret)
 	tokenString := ExtractToken(ctx)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		//Make sure that the token method conform to "SigningMethodHMAC"
@@ -140,8 +133,6 @@ func FetchAuth(authD *AccessDetails) error {
 
 	result, err := conn.Do("HGET", authD.Username, authD.AccessUuid)
 	if err != nil || result == nil {
-		log.Printf("result getting from redis: %v\n", result)
-		log.Printf("error getting from redis: %v\n", result)
 		return errors.New("Unauthorized")
 	}
 	log.Printf("result getting from redis2: %v\n", result)

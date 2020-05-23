@@ -187,7 +187,7 @@ func GetMostLikeProject() *FilteredProjectList {
 		log.Printf("Error getting cache: %v\n", err)
 	} else {
 		if err := json.Unmarshal(v, data); err != nil {
-			log.Printf("err getmostlikeproject: %v", err)
+			log.Printf("err GetMostLikeProject: %v", err)
 		}
 		if data != nil {
 			return data

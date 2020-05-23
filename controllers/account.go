@@ -5,7 +5,6 @@ import (
 	"ProjectGallery/models"
 	"ProjectGallery/validations"
 	"encoding/json"
-	"log"
 	"strings"
 
 	"github.com/astaxie/beego"
@@ -179,7 +178,6 @@ func (u *AccountController) Login() {
 	json.Unmarshal(u.Ctx.Input.RequestBody, &account)
 	check, err := models.Login(account.Username, account.Password)
 	if err != nil {
-		log.Printf("mengapa?? %v", err)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return

@@ -25,14 +25,9 @@ func TestPingRedis() error {
 }
 
 func CacheMostLiked(ctx context.Context) {
-	//caching most liked project every 1 hour
 	ctx, _ = context.WithTimeout(ctx, time.Second*30)
 	conn := helpers.NewPool().Get()
 	defer conn.Close()
-	// _, err := conn.Do("FLUSHALL")
-	// if err != nil {
-	// 	log.Printf("error flushing: %v\n", err)
-	// }
 	projectList := models.FilterMostLikeProject()
 	_, err := conn.Do("HSET", "filtered-data", "data", projectList)
 	if err != nil {

@@ -154,14 +154,12 @@ func Login(username, password string) (*helpers.TokenDetails, error) {
 	err := o.Read(&acc, "username")
 
 	if err != nil {
-		log.Printf("error reading from DB")
-		return nil, errors.New("InvalId username or password")
+		return nil, errors.New("Invalid username or password")
 	}
 
 	check := helpers.ComparePassword(acc.Password, []byte(password))
 	if !check {
-		log.Printf("invalid hash compare")
-		return nil, errors.New("InvalId username or password")
+		return nil, errors.New("Invalid username or password")
 	}
 
 	//JWT TOKEN
