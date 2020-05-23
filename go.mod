@@ -4,11 +4,8 @@ go 1.14
 
 require (
 	github.com/astaxie/beego v1.12.1
-<<<<<<< HEAD
 	github.com/go-delve/delve v1.4.1 // indirect
-=======
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
->>>>>>> b1ed56e26e0d9cc2018489e32c41f139d3338118
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644 // indirect
