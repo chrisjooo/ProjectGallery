@@ -5,6 +5,7 @@ import (
 	"ProjectGallery/models"
 	"ProjectGallery/validations"
 	"encoding/json"
+	"errors"
 	"strconv"
 
 	"github.com/astaxie/beego"
@@ -34,6 +35,12 @@ func (u *VoteController) Post() {
 	}
 	var rating models.Vote
 	json.Unmarshal(u.Ctx.Input.RequestBody, &rating)
+
+	if rating.Author != tokenAuth.Username {
+		u.Data["json"] = errors.New("Unauthorized").Error()
+		u.ServeJSON()
+		return
+	}
 
 	validationErr := validations.VoteValidation(&rating)
 	if validationErr != nil {
@@ -92,6 +99,12 @@ func (u *VoteController) Put() {
 	var rating models.Vote
 	json.Unmarshal(u.Ctx.Input.RequestBody, &rating)
 
+	if rating.Author != tokenAuth.Username {
+		u.Data["json"] = errors.New("Unauthorized").Error()
+		u.ServeJSON()
+		return
+	}
+
 	validationErr := validations.VoteValidation(&rating)
 	if validationErr != nil {
 		u.Data["json"] = validationErr.Error()
@@ -143,6 +156,12 @@ func (u *VoteController) Delete() {
 	}
 
 	if author != "" && projectId != "" && err == nil {
+		if author != tokenAuth.Username {
+			u.Data["json"] = errors.New("Unauthorized").Error()
+			u.ServeJSON()
+			return
+		}
+
 		err = models.DeleteVote(author, proId)
 		if err != nil {
 			u.Data["json"] = err.Error()

@@ -135,7 +135,6 @@ func FetchAuth(authD *AccessDetails) error {
 	if err != nil || result == nil {
 		return errors.New("Unauthorized")
 	}
-	log.Printf("result getting from redis2: %v\n", result)
 
 	return nil
 }

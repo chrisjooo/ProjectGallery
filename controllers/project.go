@@ -4,6 +4,7 @@ import (
 	"ProjectGallery/helpers"
 	"ProjectGallery/models"
 	"ProjectGallery/validations"
+	"errors"
 	"strconv"
 
 	"strings"
@@ -35,6 +36,12 @@ func (u *ProjectController) Post() {
 	}
 	project := models.Project{}
 	u.ParseForm(&project)
+
+	if project.Author != tokenAuth.Username {
+		u.Data["json"] = errors.New("Unauthorized").Error()
+		u.ServeJSON()
+		return
+	}
 
 	validationErr := validations.ProjectValidation(&project)
 	if validationErr != nil {
@@ -153,6 +160,12 @@ func (u *ProjectController) Put() {
 			project := models.Project{}
 			u.ParseForm(&project)
 
+			if project.Author != tokenAuth.Username {
+				u.Data["json"] = errors.New("Unauthorized").Error()
+				u.ServeJSON()
+				return
+			}
+
 			validationErr := validations.ProjectValidation(&project)
 			if validationErr != nil {
 				u.Data["json"] = validationErr.Error()
@@ -221,6 +234,12 @@ func (u *ProjectController) Delete() {
 		u.Data["json"] = err.Error()
 	} else {
 		if id != 0 {
+			project, err := models.GetProjectById(id)
+			if project.Author != tokenAuth.Username {
+				u.Data["json"] = errors.New("Unauthorized").Error()
+				u.ServeJSON()
+				return
+			}
 			err = models.DeleteProject(id)
 			if err != nil {
 				u.Data["json"] = err.Error()
