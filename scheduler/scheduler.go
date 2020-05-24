@@ -35,14 +35,14 @@ func CacheMostLiked() {
 	if err != nil {
 		log.Printf("Error setting cache: %v", err)
 	} else {
-		log.Printf("Success inserting every 1 minute")
+		log.Printf("Success inserting every 5 minute")
 	}
 }
 
 func InitScheduler() {
 	c := cron.New()
-	c.AddFunc("@every 0h1m0s", func() {
-		log.Println("Cron Jobs every 1 minute")
+	c.AddFunc("@every 0h5m0s", func() {
+		log.Println("Cron Jobs every 5 minute")
 		CacheMostLiked()
 	})
 	c.Start()
