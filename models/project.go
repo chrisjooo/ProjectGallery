@@ -190,6 +190,7 @@ func GetMostLikeProject() *FilteredProjectList {
 			log.Printf("err GetMostLikeProject: %v", err)
 		}
 		if data != nil {
+			log.Printf("getting from redis\n")
 			return data
 		}
 	}

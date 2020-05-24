@@ -5,6 +5,7 @@ import (
 	"ProjectGallery/models"
 	"ProjectGallery/validations"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/astaxie/beego"
@@ -93,6 +94,12 @@ func (u *AccountController) Put() {
 
 		u.ParseForm(&account)
 
+		if account.Username != tokenAuth.Username {
+			u.Data["json"] = errors.New("Unauthorized").Error()
+			u.ServeJSON()
+			return
+		}
+
 		validationErr := validations.AccountValidation(&account)
 		if validationErr != nil {
 			u.Data["json"] = validationErr.Error()
@@ -157,6 +164,17 @@ func (u *AccountController) Delete() {
 		return
 	}
 	username := u.GetString(":username")
+	if username != tokenAuth.Username {
+		u.Data["json"] = errors.New("Unauthorized").Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.DeleteAuth(tokenAuth.Username, tokenAuth.AccessUuid)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 	err = models.DeleteAccount(username)
 	if err != nil {
 		u.Data["json"] = err.Error()

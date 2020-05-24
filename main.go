@@ -38,8 +38,8 @@ func main() {
 
 	err1 := scheduler.TestPingRedis()
 	log.Printf("%v", err1)
-
+	scheduler.InitScheduler()
+	log.Printf("already init scheduler time to init beego\n")
 	beego.Run()
 
-	scheduler.InitScheduler()
 }
