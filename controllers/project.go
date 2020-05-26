@@ -166,42 +166,37 @@ func (u *ProjectController) Put() {
 				return
 			}
 
-			validationErr := validations.ProjectValidation(&project)
-			if validationErr != nil {
-				u.Data["json"] = validationErr.Error()
-			} else {
-				file, header, err := u.GetFile("project_pic") // where <<this>> is the controller and <<file>> the id of your form field
-				if file != nil {
-					// get the filename
-					fileName := header.Filename
-					url := "./static/images/projects/"
-					fileType := fileName[strings.IndexByte(fileName, '.'):]
-					newFileName := url + strconv.FormatInt(id, 10) + fileType
+			file, header, err := u.GetFile("project_pic") // where <<this>> is the controller and <<file>> the id of your form field
+			if file != nil {
+				// get the filename
+				fileName := header.Filename
+				url := "./static/images/projects/"
+				fileType := fileName[strings.IndexByte(fileName, '.'):]
+				newFileName := url + strconv.FormatInt(id, 10) + fileType
 
-					err = u.SaveToFile("project_pic", newFileName)
+				err = u.SaveToFile("project_pic", newFileName)
+				if err != nil {
+					u.Data["json"] = err.Error()
+				} else {
+					err = helpers.CompressToPNG(newFileName)
 					if err != nil {
 						u.Data["json"] = err.Error()
 					} else {
-						err = helpers.CompressToPNG(newFileName)
-						if err != nil {
-							u.Data["json"] = err.Error()
+						project.ProjectPic = newFileName
+						uu, err1 := models.UpdateProject(id, &project)
+						if err1 != nil {
+							u.Data["json"] = err1.Error()
 						} else {
-							project.ProjectPic = newFileName
-							uu, err1 := models.UpdateProject(id, &project)
-							if err1 != nil {
-								u.Data["json"] = err1.Error()
-							} else {
-								u.Data["json"] = uu
-							}
+							u.Data["json"] = uu
 						}
 					}
+				}
+			} else {
+				uu, err := models.UpdateProject(id, &project)
+				if err != nil {
+					u.Data["json"] = err.Error()
 				} else {
-					uu, err := models.UpdateProject(id, &project)
-					if err != nil {
-						u.Data["json"] = err.Error()
-					} else {
-						u.Data["json"] = uu
-					}
+					u.Data["json"] = uu
 				}
 			}
 		}
