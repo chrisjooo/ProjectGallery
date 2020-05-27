@@ -1,5 +1,6 @@
 *.exe
-*.conf
+
+*/app.conf
 *.sum
 main
 ProjectGallery
