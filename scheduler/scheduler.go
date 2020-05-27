@@ -3,13 +3,10 @@ package scheduler
 import (
 	"ProjectGallery/helpers"
 	"ProjectGallery/models"
-	"context"
+	"encoding/json"
 	"log"
-	"os"
-	"os/signal"
-	"time"
 
-	"github.com/zhashkevych/scheduler"
+	"gopkg.in/robfig/cron.v2"
 )
 
 func TestPingRedis() error {
@@ -24,33 +21,29 @@ func TestPingRedis() error {
 	return err
 }
 
-func CacheMostLiked(ctx context.Context) {
-	ctx, _ = context.WithTimeout(ctx, time.Second*30)
+func CacheMostLiked() {
 	conn := helpers.NewPool().Get()
 	defer conn.Close()
 	projectList := models.FilterMostLikeProject()
-	_, err := conn.Do("HSET", "filtered-data", "data", projectList)
+
+	jsonData, err := json.Marshal(projectList)
 	if err != nil {
-		log.Printf("Error setting cache: %v", err)
+		log.Printf("error marshaling data")
 	}
 
-	select {
-	case <-ctx.Done():
-		log.Println("Scheduler timeout-30second-")
-		return
-	default:
+	_, err = conn.Do("HSET", "filtered-data", "data", jsonData)
+	if err != nil {
+		log.Printf("Error setting cache: %v", err)
+	} else {
+		log.Printf("Success inserting every 5 minute")
 	}
 }
 
 func InitScheduler() {
-	ctx := context.Background()
-
-	sc := scheduler.NewScheduler()
-	sc.Add(ctx, CacheMostLiked, time.Minute*1)
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-
-	<-quit
-	sc.Stop()
+	c := cron.New()
+	c.AddFunc("@every 0h5m0s", func() {
+		log.Println("Cron Jobs every 5 minute")
+		CacheMostLiked()
+	})
+	c.Start()
 }

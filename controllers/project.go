@@ -4,6 +4,8 @@ import (
 	"ProjectGallery/helpers"
 	"ProjectGallery/models"
 	"ProjectGallery/validations"
+	"errors"
+	"log"
 	"strconv"
 
 	"strings"
@@ -36,6 +38,12 @@ func (u *ProjectController) Post() {
 	project := models.Project{}
 	u.ParseForm(&project)
 
+	if project.Author != tokenAuth.Username {
+		u.Data["json"] = errors.New("Unauthorized").Error()
+		u.ServeJSON()
+		return
+	}
+
 	validationErr := validations.ProjectValidation(&project)
 	if validationErr != nil {
 		u.Data["json"] = validationErr.Error()
@@ -50,7 +58,7 @@ func (u *ProjectController) Post() {
 				fileName := header.Filename
 				url := "./static/images/projects/"
 				fileType := fileName[strings.IndexByte(fileName, '.'):]
-				newFileName := url + strconv.FormatInt(uu.Id, 10) + fileType
+				newFileName := url + strconv.FormatInt(uu.Project.Id, 10) + fileType
 				project.ProjectPic = newFileName
 				err = u.SaveToFile("project_pic", newFileName)
 				if err != nil {
@@ -61,10 +69,12 @@ func (u *ProjectController) Post() {
 						u.Data["json"] = err.Error()
 					} else {
 						//update
-						uu, err = models.UpdateProject(uu.Id, &project)
+						log.Printf("Project: %v\n", project)
+						uu, err = models.UpdateProject(uu.Project.Id, &project)
 						if err != nil {
 							u.Data["json"] = err.Error()
 						} else {
+							log.Printf("response: %v", uu)
 							u.Data["json"] = uu
 						}
 					}
@@ -152,43 +162,46 @@ func (u *ProjectController) Put() {
 		if id != 0 {
 			project := models.Project{}
 			u.ParseForm(&project)
+			log.Printf("controller update: %v", project)
 
-			validationErr := validations.ProjectValidation(&project)
-			if validationErr != nil {
-				u.Data["json"] = validationErr.Error()
-			} else {
-				file, header, err := u.GetFile("project_pic") // where <<this>> is the controller and <<file>> the id of your form field
-				if file != nil {
-					// get the filename
-					fileName := header.Filename
-					url := "./static/images/projects/"
-					fileType := fileName[strings.IndexByte(fileName, '.'):]
-					newFileName := url + strconv.FormatInt(id, 10) + fileType
+			if project.Author != tokenAuth.Username {
+				u.Data["json"] = errors.New("Unauthorized").Error()
+				u.ServeJSON()
+				return
+			}
 
-					err = u.SaveToFile("project_pic", newFileName)
+			file, header, err := u.GetFile("project_pic") // where <<this>> is the controller and <<file>> the id of your form field
+			if file != nil {
+				// get the filename
+				fileName := header.Filename
+				url := "./static/images/projects/"
+				fileType := fileName[strings.IndexByte(fileName, '.'):]
+				newFileName := url + strconv.FormatInt(id, 10) + fileType
+
+				err = u.SaveToFile("project_pic", newFileName)
+				if err != nil {
+					u.Data["json"] = err.Error()
+				} else {
+					err = helpers.CompressToPNG(newFileName)
 					if err != nil {
 						u.Data["json"] = err.Error()
 					} else {
-						err = helpers.CompressToPNG(newFileName)
-						if err != nil {
-							u.Data["json"] = err.Error()
+						project.ProjectPic = newFileName
+						uu, err1 := models.UpdateProject(id, &project)
+						if err1 != nil {
+							u.Data["json"] = err1.Error()
 						} else {
-							project.ProjectPic = newFileName
-							uu, err1 := models.UpdateProject(id, &project)
-							if err1 != nil {
-								u.Data["json"] = err1.Error()
-							} else {
-								u.Data["json"] = uu
-							}
+							u.Data["json"] = uu
 						}
 					}
+				}
+			} else {
+				log.Printf("harusnya masuk sini: %v", project)
+				uu, err := models.UpdateProject(id, &project)
+				if err != nil {
+					u.Data["json"] = err.Error()
 				} else {
-					uu, err := models.UpdateProject(id, &project)
-					if err != nil {
-						u.Data["json"] = err.Error()
-					} else {
-						u.Data["json"] = uu
-					}
+					u.Data["json"] = uu
 				}
 			}
 		}
@@ -221,6 +234,12 @@ func (u *ProjectController) Delete() {
 		u.Data["json"] = err.Error()
 	} else {
 		if id != 0 {
+			project, err := models.GetProjectById(id)
+			if project.Project.Author != tokenAuth.Username {
+				u.Data["json"] = errors.New("Unauthorized").Error()
+				u.ServeJSON()
+				return
+			}
 			err = models.DeleteProject(id)
 			if err != nil {
 				u.Data["json"] = err.Error()

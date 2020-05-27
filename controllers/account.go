@@ -5,6 +5,7 @@ import (
 	"ProjectGallery/models"
 	"ProjectGallery/validations"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/astaxie/beego"
@@ -93,44 +94,45 @@ func (u *AccountController) Put() {
 
 		u.ParseForm(&account)
 
-		validationErr := validations.AccountValidation(&account)
-		if validationErr != nil {
-			u.Data["json"] = validationErr.Error()
-		} else {
-			file, header, err := u.GetFile("profile_pic") // where <<this>> is the controller and <<file>> the id of your form field
-			if file != nil {
-				// get the filename
-				fileName := header.Filename
-				url := "./static/images/accounts/"
+		if account.Username != tokenAuth.Username {
+			u.Data["json"] = errors.New("Unauthorized").Error()
+			u.ServeJSON()
+			return
+		}
 
-				fileType := fileName[strings.IndexByte(fileName, '.'):]
-				newFileName := url + username + fileType
-				err = u.SaveToFile("profile_pic", newFileName)
+		file, header, err := u.GetFile("profile_pic") // where <<this>> is the controller and <<file>> the id of your form field
+		if file != nil {
+			// get the filename
+			fileName := header.Filename
+			url := "./static/images/accounts/"
+
+			fileType := fileName[strings.IndexByte(fileName, '.'):]
+			newFileName := url + username + fileType
+			err = u.SaveToFile("profile_pic", newFileName)
+			if err != nil {
+				u.Data["json"] = err.Error()
+			} else {
+				//helper function
+				err = helpers.CompressToPNG(newFileName)
 				if err != nil {
 					u.Data["json"] = err.Error()
 				} else {
-					//helper function
-					err = helpers.CompressToPNG(newFileName)
-					if err != nil {
-						u.Data["json"] = err.Error()
-					} else {
-						account.ProfilePic = newFileName
+					account.ProfilePic = newFileName
 
-						uu, err1 := models.UpdateAccount(username, &account)
-						if err1 != nil {
-							u.Data["json"] = err1.Error()
-						} else {
-							u.Data["json"] = uu
-						}
+					uu, err1 := models.UpdateAccount(username, &account)
+					if err1 != nil {
+						u.Data["json"] = err1.Error()
+					} else {
+						u.Data["json"] = uu
 					}
 				}
+			}
+		} else {
+			uu, err := models.UpdateAccount(username, &account)
+			if err != nil {
+				u.Data["json"] = err.Error()
 			} else {
-				uu, err := models.UpdateAccount(username, &account)
-				if err != nil {
-					u.Data["json"] = err.Error()
-				} else {
-					u.Data["json"] = uu
-				}
+				u.Data["json"] = uu
 			}
 		}
 	}
@@ -157,6 +159,17 @@ func (u *AccountController) Delete() {
 		return
 	}
 	username := u.GetString(":username")
+	if username != tokenAuth.Username {
+		u.Data["json"] = errors.New("Unauthorized").Error()
+		u.ServeJSON()
+		return
+	}
+	err = helpers.DeleteAuth(tokenAuth.Username, tokenAuth.AccessUuid)
+	if err != nil {
+		u.Data["json"] = err.Error()
+		u.ServeJSON()
+		return
+	}
 	err = models.DeleteAccount(username)
 	if err != nil {
 		u.Data["json"] = err.Error()

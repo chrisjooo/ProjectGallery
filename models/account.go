@@ -4,6 +4,7 @@ import (
 	"ProjectGallery/helpers"
 	"errors"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/astaxie/beego/orm"
@@ -24,9 +25,14 @@ type Account struct {
 	CreatedAt   time.Time `orm:"auto_now_add;type(datetime)" json:"created_at"`
 }
 
+type AccountData struct {
+	Account       Account `json:"account_data"`
+	CompressedPic string  `json:"compressed_image"`
+}
+
 type AccList struct {
-	NumAcc int64      `json:"total_account"`
-	Data   []*Account `json:"data"`
+	NumAcc int64          `json:"total_account"`
+	Data   []*AccountData `json:"data"`
 }
 
 func AddAccount(u Account) (*Account, error) {
@@ -51,11 +57,9 @@ func AddAccount(u Account) (*Account, error) {
 	} else {
 		return nil, errors.New("error inserting account")
 	}
-
-	return &u, err
 }
 
-func GetAccount(username string) (u *Account, err error) {
+func GetAccount(username string) (u *AccountData, err error) {
 
 	//ORM
 	o := orm.NewOrm()
@@ -68,7 +72,15 @@ func GetAccount(username string) (u *Account, err error) {
 		log.Print("read account error: ", err)
 		return nil, err
 	} else {
-		return &acc, nil
+		u = &AccountData{}
+		u.Account = acc
+		if acc.ProfilePic != "" {
+			url := acc.ProfilePic[:strings.LastIndexByte(acc.ProfilePic, '.')] + "-compressed.png"
+			u.CompressedPic = url
+		} else {
+			u.CompressedPic = ""
+		}
+		return u, nil
 	}
 
 }
@@ -79,42 +91,63 @@ func GetAllAccounts() *AccList {
 	list := &AccList{}
 	var account []*Account
 	o.QueryTable(new(Account)).All(&account)
+	var accountData []*AccountData
 
-	list.Data = account
+	for _, v := range account {
+		u := &AccountData{}
+		u.Account = *v
+		if v.ProfilePic != "" {
+			url := v.ProfilePic[:strings.LastIndexByte(v.ProfilePic, '.')] + "-compressed.png"
+			u.CompressedPic = url
+		} else {
+			u.CompressedPic = ""
+		}
+		accountData = append(accountData, u)
+	}
+
+	list.Data = accountData
 	list.NumAcc = int64(len(account))
 
 	return list
 
 }
 
-func UpdateAccount(username string, uu *Account) (a *Account, err error) {
+func UpdateAccount(username string, uu *Account) (u *AccountData, err error) {
 	o := orm.NewOrm()
 
-	u, err := GetAccount(username)
+	u, err = GetAccount(username)
+	acc := Account{}
+	acc = u.Account
+	u = &AccountData{}
 
 	if err == nil {
 		if uu.Email != "" {
-			u.Email = uu.Email
+			acc.Email = uu.Email
 		}
 		if uu.Description != "" {
-			u.Description = uu.Description
+			acc.Description = uu.Description
 		}
 		if uu.FullName != "" {
-			u.FullName = uu.FullName
+			acc.FullName = uu.FullName
 		}
 		if uu.Password != "" {
 			password := helpers.HashAndSalt([]byte(uu.Password))
-			u.Password = password
+			acc.Password = password
 		}
 		if uu.ProfilePic != "" {
-			u.ProfilePic = uu.ProfilePic
+			acc.ProfilePic = uu.ProfilePic
+			url := uu.ProfilePic[:strings.LastIndexByte(uu.ProfilePic, '.')] + "-compressed.png"
+			u.CompressedPic = url
+		} else {
+			u.CompressedPic = ""
 		}
 		// ORM Update
-		_, err1 := o.Update(u)
+		_, err1 := o.Update(&acc)
 		log.Print(u, err)
 
 		if err1 == nil {
 			//update successful
+			u.Account = acc
 			return u, nil
 		} else {
 			return nil, err1

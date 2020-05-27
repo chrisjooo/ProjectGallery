@@ -18,6 +18,6 @@ require (
 	golang.org/x/net v0.0.0-20200513185701-a91f0712d120 // indirect
 	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/h2non/bimg.v1 v1.0.19
-	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
+	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
