@@ -5,6 +5,7 @@ import (
 	"ProjectGallery/models"
 	"ProjectGallery/validations"
 	"errors"
+	"log"
 	"strconv"
 
 	"strings"
@@ -57,7 +58,7 @@ func (u *ProjectController) Post() {
 				fileName := header.Filename
 				url := "./static/images/projects/"
 				fileType := fileName[strings.IndexByte(fileName, '.'):]
-				newFileName := url + strconv.FormatInt(uu.Id, 10) + fileType
+				newFileName := url + strconv.FormatInt(uu.Project.Id, 10) + fileType
 				project.ProjectPic = newFileName
 				err = u.SaveToFile("project_pic", newFileName)
 				if err != nil {
@@ -68,10 +69,12 @@ func (u *ProjectController) Post() {
 						u.Data["json"] = err.Error()
 					} else {
 						//update
-						uu, err = models.UpdateProject(uu.Id, &project)
+						log.Printf("Project: %v\n", project)
+						uu, err = models.UpdateProject(uu.Project.Id, &project)
 						if err != nil {
 							u.Data["json"] = err.Error()
 						} else {
+							log.Printf("response: %v", uu)
 							u.Data["json"] = uu
 						}
 					}
@@ -159,6 +162,7 @@ func (u *ProjectController) Put() {
 		if id != 0 {
 			project := models.Project{}
 			u.ParseForm(&project)
+			log.Printf("controller update: %v", project)
 
 			if project.Author != tokenAuth.Username {
 				u.Data["json"] = errors.New("Unauthorized").Error()
@@ -192,6 +196,7 @@ func (u *ProjectController) Put() {
 					}
 				}
 			} else {
+				log.Printf("harusnya masuk sini: %v", project)
 				uu, err := models.UpdateProject(id, &project)
 				if err != nil {
 					u.Data["json"] = err.Error()
@@ -230,7 +235,7 @@ func (u *ProjectController) Delete() {
 	} else {
 		if id != 0 {
 			project, err := models.GetProjectById(id)
-			if project.Author != tokenAuth.Username {
+			if project.Project.Author != tokenAuth.Username {
 				u.Data["json"] = errors.New("Unauthorized").Error()
 				u.ServeJSON()
 				return

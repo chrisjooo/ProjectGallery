@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/astaxie/beego/orm"
@@ -24,9 +25,14 @@ type Project struct {
 	CreatedAt   time.Time `orm:"auto_now_add;type(datetime)" json:"created_at"`
 }
 
+type ProjectData struct {
+	Project       Project `json:"project-data"`
+	CompressedPic string  `json:"compressed-image"`
+}
+
 type ProjectList struct {
-	NumProject int64      `json:"total_project"`
-	Data       []*Project `json:"data"`
+	NumProject int64          `json:"total_project"`
+	Data       []*ProjectData `json:"data"`
 }
 
 type FilteredProject struct {
@@ -39,12 +45,17 @@ type FilteredProject struct {
 	TotalLike   int64     `json:"total_like"`
 }
 
-type FilteredProjectList struct {
-	NumProject int64              `json:"total_project"`
-	Data       []*FilteredProject `json:"data"`
+type FilteredProjectData struct {
+	Project       FilteredProject `json:"project-data"`
+	CompressedPic string          `json:"compressed-image"`
 }
 
-func AddProject(u Project) (*Project, error) {
+type FilteredProjectList struct {
+	NumProject int64                  `json:"total_project"`
+	Data       []*FilteredProjectData `json:"data"`
+}
+
+func AddProject(u Project) (*ProjectData, error) {
 	//ORM database
 	o := orm.NewOrm()
 
@@ -68,7 +79,16 @@ func AddProject(u Project) (*Project, error) {
 			return nil, errors.New("failed insertion")
 		}
 	}
-	return &u, nil
+	resp := &ProjectData{}
+	resp.Project = u
+	log.Printf("inside model project: %v", resp.Project.ProjectPic)
+	if u.ProjectPic != "" {
+		url := u.ProjectPic[:strings.LastIndexByte(u.ProjectPic, '.')] + "-compressed.png"
+		resp.CompressedPic = url
+	} else {
+		resp.CompressedPic = ""
+	}
+	return resp, nil
 }
 
 func GetProjects(projectName string) *ProjectList {
@@ -81,14 +101,29 @@ func GetProjects(projectName string) *ProjectList {
 		log.Print("error query: ", err)
 		return nil
 	}
-	list.Data = projects
+
+	var projectData []*ProjectData
+
+	for _, v := range projects {
+		u := &ProjectData{}
+		u.Project = *v
+		if v.ProjectPic != "" {
+			url := v.ProjectPic[:strings.LastIndexByte(v.ProjectPic, '.')] + "-compressed.png"
+			u.CompressedPic = url
+		} else {
+			u.CompressedPic = ""
+		}
+		projectData = append(projectData, u)
+	}
+
+	list.Data = projectData
 	list.NumProject = num
 
 	return list
 
 }
 
-func GetProjectById(Id int64) (*Project, error) {
+func GetProjectById(Id int64) (*ProjectData, error) {
 	o := orm.NewOrm()
 	project := Project{Id: Id}
 
@@ -98,35 +133,55 @@ func GetProjectById(Id int64) (*Project, error) {
 	} else if err != nil {
 		return nil, err
 	} else {
-		return &project, nil
+		u := &ProjectData{}
+		u.Project = project
+		if project.ProjectPic != "" {
+			url := project.ProjectPic[:strings.LastIndexByte(project.ProjectPic, '.')] + "-compressed.png"
+			u.CompressedPic = url
+		} else {
+			u.CompressedPic = ""
+		}
+		return u, nil
 	}
 }
 
-func UpdateProject(Id int64, uu *Project) (a *Project, err error) {
+func UpdateProject(Id int64, uu *Project) (a *ProjectData, err error) {
 	o := orm.NewOrm()
 
 	u, err := GetProjectById(Id)
+	a = &ProjectData{}
+	project := Project{}
+	project = u.Project
 
 	if err == nil {
-		if uu.Author != u.Author {
+		if uu.Author != project.Author {
 			return nil, errors.New("not matching author")
 		}
 		if uu.Description != "" {
-			u.Description = uu.Description
+			project.Description = uu.Description
 		}
 		if uu.Name != "" {
-			u.Name = uu.Name
+			project.Name = uu.Name
 		}
 		if uu.ProjectPic != "" {
-			u.ProjectPic = uu.ProjectPic
+			project.ProjectPic = uu.ProjectPic
+			url := uu.ProjectPic[:strings.LastIndexByte(uu.ProjectPic, '.')] + "-compressed.png"
+			a.CompressedPic = url
+		} else {
+			project.ProjectPic = uu.ProjectPic
+			a.CompressedPic = ""
 		}
+
+		a.Project = project
+
+		log.Printf("Updating project: %v", project)
 		// ORM Update
-		_, err1 := o.Update(u)
+		_, err1 := o.Update(&project)
 		log.Print(u, err)
 
 		if err1 == nil {
 			//update successful
-			return u, nil
+			return a, nil
 		} else {
 			return nil, err1
 		}
@@ -170,7 +225,22 @@ func FilterMostLikeProject() *FilteredProjectList {
 		log.Print("error query: ", err)
 		return nil
 	}
-	list.Data = projects
+
+	var projectData []*FilteredProjectData
+
+	for _, v := range projects {
+		u := &FilteredProjectData{}
+		u.Project = *v
+		if v.ProjectPic != "" {
+			url := v.ProjectPic[:strings.LastIndexByte(v.ProjectPic, '.')] + "-compressed.png"
+			u.CompressedPic = url
+		} else {
+			u.CompressedPic = ""
+		}
+		projectData = append(projectData, u)
+	}
+
+	list.Data = projectData
 	list.NumProject = num
 
 	return list
