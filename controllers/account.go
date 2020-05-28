@@ -6,6 +6,7 @@ import (
 	"ProjectGallery/validations"
 	"encoding/json"
 	"errors"
+	"log"
 	"strings"
 
 	"github.com/astaxie/beego"
@@ -117,6 +118,7 @@ func (u *AccountController) Put() {
 		if file != nil {
 			// get the filename
 			fileName := header.Filename
+
 			url := "./static/images/accounts/"
 
 			fileType := fileName[strings.IndexByte(fileName, '.'):]
@@ -134,7 +136,10 @@ func (u *AccountController) Put() {
 					u.Ctx.ResponseWriter.WriteHeader(errCode)
 					u.Data["json"] = err.Error()
 				} else {
-					account.ProfilePic = newFileName
+					domain := beego.AppConfig.String("domain")
+					log.Printf("domain: %v\n", domain)
+					urlFileName := domain + "/static/images/accounts/" + username + fileType
+					account.ProfilePic = urlFileName
 
 					uu, err1 := models.UpdateAccount(username, &account)
 					if err1 != nil {

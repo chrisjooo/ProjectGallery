@@ -70,7 +70,10 @@ func (u *ProjectController) Post() {
 				url := "./static/images/projects/"
 				fileType := fileName[strings.IndexByte(fileName, '.'):]
 				newFileName := url + strconv.FormatInt(uu.Project.Id, 10) + fileType
-				project.ProjectPic = newFileName
+				domain := beego.AppConfig.String("domain")
+				log.Printf("domain: %v\n", domain)
+				urlFileName := domain + "/static/images/accounts/" + strconv.FormatInt(uu.Project.Id, 10) + fileType
+				project.ProjectPic = urlFileName
 				err = u.SaveToFile("project_pic", newFileName)
 				if err != nil {
 					errCode := helpers.ErrorCode(err.Error())
@@ -220,7 +223,10 @@ func (u *ProjectController) Put() {
 						u.Ctx.ResponseWriter.WriteHeader(errCode)
 						u.Data["json"] = err.Error()
 					} else {
-						project.ProjectPic = newFileName
+						domain := beego.AppConfig.String("domain")
+						log.Printf("domain: %v\n", domain)
+						urlFileName := domain + "/static/images/accounts/" + strconv.FormatInt(id, 10) + fileType
+						project.ProjectPic = urlFileName
 						uu, err1 := models.UpdateProject(id, &project)
 						if err1 != nil {
 							errCode := helpers.ErrorCode(err1.Error())
