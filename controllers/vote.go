@@ -23,12 +23,16 @@ type VoteController struct {
 func (u *VoteController) Post() {
 	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	err = helpers.FetchAuth(tokenAuth)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
@@ -37,17 +41,24 @@ func (u *VoteController) Post() {
 	json.Unmarshal(u.Ctx.Input.RequestBody, &rating)
 
 	if rating.Author != tokenAuth.Username {
-		u.Data["json"] = errors.New("Unauthorized").Error()
+		err = errors.New("Unauthorized")
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
+		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 
 	validationErr := validations.VoteValidation(&rating)
 	if validationErr != nil {
+		errCode := helpers.ErrorCode(validationErr.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = validationErr.Error()
 	} else {
 		newrating, err := models.AddVote(rating)
 		if err != nil {
+			errCode := helpers.ErrorCode(err.Error())
+			u.Ctx.ResponseWriter.WriteHeader(errCode)
 			u.Data["json"] = err.Error()
 		} else {
 			u.Data["json"] = newrating
@@ -65,10 +76,14 @@ func (u *VoteController) GetProjectVote() {
 	projectId, err := u.GetInt64(":projectId")
 
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 	} else {
 		err, totalLike := models.GetTotalVote(projectId)
 		if err != nil {
+			errCode := helpers.ErrorCode(err.Error())
+			u.Ctx.ResponseWriter.WriteHeader(errCode)
 			u.Data["json"] = err.Error()
 		} else {
 			u.Data["json"] = totalLike
@@ -86,12 +101,16 @@ func (u *VoteController) GetProjectVote() {
 func (u *VoteController) Put() {
 	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	err = helpers.FetchAuth(tokenAuth)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
@@ -100,19 +119,26 @@ func (u *VoteController) Put() {
 	json.Unmarshal(u.Ctx.Input.RequestBody, &rating)
 
 	if rating.Author != tokenAuth.Username {
-		u.Data["json"] = errors.New("Unauthorized").Error()
+		err = errors.New("Unauthorized")
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
+		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 
 	validationErr := validations.VoteValidation(&rating)
 	if validationErr != nil {
+		errCode := helpers.ErrorCode(validationErr.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = validationErr.Error()
 	} else {
 		author, projectId := rating.Author, rating.ProjectId
 		if author != "" && projectId != 0 {
 			uu, err := models.UpdateVote(&rating)
 			if err != nil {
+				errCode := helpers.ErrorCode(err.Error())
+				u.Ctx.ResponseWriter.WriteHeader(errCode)
 				u.Data["json"] = err.Error()
 			} else {
 				u.Data["json"] = uu
@@ -132,12 +158,16 @@ func (u *VoteController) Put() {
 func (u *VoteController) Delete() {
 	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	err = helpers.FetchAuth(tokenAuth)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
@@ -152,18 +182,25 @@ func (u *VoteController) Delete() {
 
 	proId, err := strconv.ParseInt(projectId, 10, 64)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 	}
 
 	if author != "" && projectId != "" && err == nil {
 		if author != tokenAuth.Username {
-			u.Data["json"] = errors.New("Unauthorized").Error()
+			err = errors.New("Unauthorized")
+			errCode := helpers.ErrorCode(err.Error())
+			u.Ctx.ResponseWriter.WriteHeader(errCode)
+			u.Data["json"] = err.Error()
 			u.ServeJSON()
 			return
 		}
 
 		err = models.DeleteVote(author, proId)
 		if err != nil {
+			errCode := helpers.ErrorCode(err.Error())
+			u.Ctx.ResponseWriter.WriteHeader(errCode)
 			u.Data["json"] = err.Error()
 		} else {
 			u.Data["json"] = "delete success!"

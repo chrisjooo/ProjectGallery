@@ -27,11 +27,15 @@ func (u *AccountController) Post() {
 	if validationErr == nil {
 		newAcc, err := models.AddAccount(account)
 		if err != nil {
+			errCode := helpers.ErrorCode(err.Error())
+			u.Ctx.ResponseWriter.WriteHeader(errCode)
 			u.Data["json"] = err.Error()
 		} else {
 			u.Data["json"] = newAcc
 		}
 	} else {
+		errCode := helpers.ErrorCode(validationErr.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = validationErr.Error()
 	}
 
@@ -59,6 +63,8 @@ func (u *AccountController) GetByUsername() {
 	if username != "" {
 		account, err := models.GetAccount(username)
 		if err != nil {
+			errCode := helpers.ErrorCode(err.Error())
+			u.Ctx.ResponseWriter.WriteHeader(errCode)
 			u.Data["json"] = err.Error()
 		} else {
 			u.Data["json"] = account
@@ -77,12 +83,16 @@ func (u *AccountController) GetByUsername() {
 func (u *AccountController) Put() {
 	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	err = helpers.FetchAuth(tokenAuth)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
@@ -95,7 +105,10 @@ func (u *AccountController) Put() {
 		u.ParseForm(&account)
 
 		if account.Username != tokenAuth.Username {
-			u.Data["json"] = errors.New("Unauthorized").Error()
+			err := errors.New("Unauthorized")
+			errCode := helpers.ErrorCode(err.Error())
+			u.Ctx.ResponseWriter.WriteHeader(errCode)
+			u.Data["json"] = err.Error()
 			u.ServeJSON()
 			return
 		}
@@ -110,17 +123,23 @@ func (u *AccountController) Put() {
 			newFileName := url + username + fileType
 			err = u.SaveToFile("profile_pic", newFileName)
 			if err != nil {
+				errCode := helpers.ErrorCode(err.Error())
+				u.Ctx.ResponseWriter.WriteHeader(errCode)
 				u.Data["json"] = err.Error()
 			} else {
 				//helper function
 				err = helpers.CompressToPNG(newFileName)
 				if err != nil {
+					errCode := helpers.ErrorCode(err.Error())
+					u.Ctx.ResponseWriter.WriteHeader(errCode)
 					u.Data["json"] = err.Error()
 				} else {
 					account.ProfilePic = newFileName
 
 					uu, err1 := models.UpdateAccount(username, &account)
 					if err1 != nil {
+						errCode := helpers.ErrorCode(err1.Error())
+						u.Ctx.ResponseWriter.WriteHeader(errCode)
 						u.Data["json"] = err1.Error()
 					} else {
 						u.Data["json"] = uu
@@ -130,6 +149,8 @@ func (u *AccountController) Put() {
 		} else {
 			uu, err := models.UpdateAccount(username, &account)
 			if err != nil {
+				errCode := helpers.ErrorCode(err.Error())
+				u.Ctx.ResponseWriter.WriteHeader(errCode)
 				u.Data["json"] = err.Error()
 			} else {
 				u.Data["json"] = uu
@@ -148,30 +169,41 @@ func (u *AccountController) Put() {
 func (u *AccountController) Delete() {
 	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	err = helpers.FetchAuth(tokenAuth)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	username := u.GetString(":username")
 	if username != tokenAuth.Username {
-		u.Data["json"] = errors.New("Unauthorized").Error()
+		err = errors.New("Unauthorized")
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
+		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	err = helpers.DeleteAuth(tokenAuth.Username, tokenAuth.AccessUuid)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	err = models.DeleteAccount(username)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 	} else {
 		u.Data["json"] = "delete success!"
@@ -191,6 +223,8 @@ func (u *AccountController) Login() {
 	json.Unmarshal(u.Ctx.Input.RequestBody, &account)
 	check, err := models.Login(account.Username, account.Password)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
@@ -204,6 +238,8 @@ func (u *AccountController) Login() {
 			"access_token": check.AccessToken,
 		}
 	} else {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 	}
 	u.ServeJSON()
@@ -216,18 +252,24 @@ func (u *AccountController) Login() {
 func (u *AccountController) Logout() {
 	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	err = helpers.FetchAuth(tokenAuth)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	err = helpers.DeleteAuth(tokenAuth.Username, tokenAuth.AccessUuid)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return

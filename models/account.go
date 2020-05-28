@@ -2,7 +2,6 @@ package models
 
 import (
 	"ProjectGallery/helpers"
-	"errors"
 	"log"
 	"strings"
 	"time"
@@ -46,7 +45,8 @@ func AddAccount(u Account) (*Account, error) {
 	err := o.Read(&acc, "Username")
 	if err == nil || err != orm.ErrNoRows {
 		log.Print(err)
-		return nil, errors.New("username already exist")
+		errMessage := helpers.ErrorMessage(helpers.AccountExist)
+		return nil, errMessage
 	}
 
 	newId, err := o.Insert(&u)
@@ -55,7 +55,8 @@ func AddAccount(u Account) (*Account, error) {
 		u.Id = newId
 		return &u, nil
 	} else {
-		return nil, errors.New("error inserting account")
+		errMessage := helpers.ErrorMessage(helpers.Post)
+		return nil, errMessage
 	}
 }
 
@@ -67,10 +68,12 @@ func GetAccount(username string) (u *AccountData, err error) {
 	err = o.Read(&acc, "Username")
 	if err != nil {
 		if err == orm.ErrNoRows {
-			return nil, errors.New("Account not exists")
+			errMessage := helpers.ErrorMessage(helpers.CheckAccount)
+			return nil, errMessage
 		}
 		log.Print("read account error: ", err)
-		return nil, err
+		errMessage := helpers.ErrorMessage(helpers.Get)
+		return nil, errMessage
 	} else {
 		u = &AccountData{}
 		u.Account = acc
@@ -139,6 +142,7 @@ func UpdateAccount(username string, uu *Account) (u *AccountData, err error) {
 			url := uu.ProfilePic[:strings.LastIndexByte(uu.ProfilePic, '.')] + "-compressed.png"
 			u.CompressedPic = url
 		} else {
+			acc.ProfilePic = uu.ProfilePic
 			u.CompressedPic = ""
 		}
 		// ORM Update
@@ -150,12 +154,10 @@ func UpdateAccount(username string, uu *Account) (u *AccountData, err error) {
 			u.Account = acc
 			return u, nil
 		} else {
-			return nil, err1
+			errMessage := helpers.ErrorMessage(helpers.Put)
+			return nil, errMessage
 		}
 	} else {
-		if err == orm.ErrNoRows {
-			return nil, errors.New("Account not exist")
-		}
 		return nil, err
 	}
 }
@@ -165,17 +167,15 @@ func DeleteAccount(username string) error {
 
 	_, err := GetAccount(username)
 	if err != nil {
-		if err == orm.ErrNoRows {
-			return errors.New("Account not existed")
-		}
 		return err
 	}
 
 	_, err = o.Delete(&Account{Username: username}, "Username")
 
 	if err != nil {
-		log.Fatal("delete Account failed")
-		return err
+		log.Println("delete Account failed")
+		errMessage := helpers.ErrorMessage(helpers.Delete)
+		return errMessage
 	}
 	return nil
 }
@@ -187,24 +187,23 @@ func Login(username, password string) (*helpers.TokenDetails, error) {
 	err := o.Read(&acc, "username")
 
 	if err != nil {
-		return nil, errors.New("Invalid username or password")
+		errMessage := helpers.ErrorMessage(helpers.AccountLogin)
+		return nil, errMessage
 	}
 
 	check := helpers.ComparePassword(acc.Password, []byte(password))
 	if !check {
-		return nil, errors.New("Invalid username or password")
+		errMessage := helpers.ErrorMessage(helpers.AccountLogin)
+		return nil, errMessage
 	}
 
 	//JWT TOKEN
 
 	token, err := helpers.CreateToken(acc.Username)
 	if err != nil {
-		return nil, err
+		errMessage := helpers.ErrorMessage(helpers.JWTLogin)
+		return nil, errMessage
 	}
 	return token, nil
 
 }
-
-// func Logout(username string) (error) {
-
-// }

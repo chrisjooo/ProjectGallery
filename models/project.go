@@ -26,8 +26,8 @@ type Project struct {
 }
 
 type ProjectData struct {
-	Project       Project `json:"project-data"`
-	CompressedPic string  `json:"compressed-image"`
+	Project       Project `json:"project_data"`
+	CompressedPic string  `json:"compressed_image"`
 }
 
 type ProjectList struct {
@@ -46,8 +46,8 @@ type FilteredProject struct {
 }
 
 type FilteredProjectData struct {
-	Project       FilteredProject `json:"project-data"`
-	CompressedPic string          `json:"compressed-image"`
+	Project       FilteredProject `json:"project_data"`
+	CompressedPic string          `json:"compressed_image"`
 }
 
 type FilteredProjectList struct {
@@ -62,10 +62,6 @@ func AddProject(u Project) (*ProjectData, error) {
 	//checking author already member
 	_, err := GetAccount(u.Author)
 	if err != nil {
-		if err == orm.ErrNoRows {
-			return nil, errors.New("account is not a member")
-		}
-		log.Println("error: ", err)
 		return nil, err
 	}
 
@@ -76,7 +72,8 @@ func AddProject(u Project) (*ProjectData, error) {
 	} else {
 		err = o.Read(&u)
 		if err != nil {
-			return nil, errors.New("failed insertion")
+			errMessage := helpers.ErrorMessage(helpers.Post)
+			return nil, errMessage
 		}
 	}
 	resp := &ProjectData{}
@@ -129,9 +126,11 @@ func GetProjectById(Id int64) (*ProjectData, error) {
 
 	err := o.Read(&project)
 	if err == orm.ErrNoRows {
-		return nil, errors.New("Project not exists")
+		errMessage := helpers.ErrorMessage(helpers.CheckProject)
+		return nil, errMessage
 	} else if err != nil {
-		return nil, err
+		errMessage := helpers.ErrorMessage(helpers.Get)
+		return nil, errMessage
 	} else {
 		u := &ProjectData{}
 		u.Project = project
@@ -183,12 +182,10 @@ func UpdateProject(Id int64, uu *Project) (a *ProjectData, err error) {
 			//update successful
 			return a, nil
 		} else {
-			return nil, err1
+			errMessage := helpers.ErrorMessage(helpers.Put)
+			return nil, errMessage
 		}
 	} else {
-		if err == orm.ErrNoRows {
-			return nil, errors.New("Project Not Exist")
-		}
 		return nil, err
 	}
 }
@@ -198,9 +195,6 @@ func DeleteProject(Id int64) error {
 
 	_, err := GetProjectById(Id)
 	if err != nil {
-		if err == orm.ErrNoRows {
-			return errors.New("Project Not Exist")
-		}
 		return err
 	}
 
@@ -209,8 +203,9 @@ func DeleteProject(Id int64) error {
 	log.Print(err)
 
 	if err != nil {
-		log.Fatal("delete Project failed")
-		return err
+		log.Println("delete Project failed")
+		errMessage := helpers.ErrorMessage(helpers.Delete)
+		return errMessage
 	}
 	return nil
 }

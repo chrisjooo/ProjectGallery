@@ -1,7 +1,7 @@
 package models
 
 import (
-	"errors"
+	"ProjectGallery/helpers"
 	"log"
 
 	"github.com/astaxie/beego/orm"
@@ -24,28 +24,17 @@ func AddVote(u Vote) (*Vote, error) {
 
 	_, err := GetProjectById(u.ProjectId)
 	if err != nil {
-		if err == orm.ErrNoRows {
-			return nil, errors.New("Project not found")
-		}
 		return nil, err
 	}
 	_, err = GetAccount(u.Author)
 	if err != nil {
-		if err == orm.ErrNoRows {
-			return nil, errors.New("Account not found")
-		}
 		return nil, err
 	}
 
 	_, err = GetVote(u.Author, u.ProjectId)
-	if err != nil || err == orm.ErrNoRows {
+	errMessage := helpers.ErrorMessage(helpers.CheckVote)
 
-		temp := Vote{Author: u.Author, ProjectId: u.ProjectId}
-		err = o.Read(&temp, "Author", "ProjectId")
-		if err != nil && err != orm.ErrNoRows {
-			return nil, err
-		}
-
+	if err != nil || err == errMessage {
 		newId, err := o.Insert(&u)
 		if err == nil {
 			//successfully inserted
@@ -54,11 +43,13 @@ func AddVote(u Vote) (*Vote, error) {
 		} else {
 			err = o.Read(&u)
 			if err != nil {
-				return nil, err
+				errMessage := helpers.ErrorMessage(helpers.Post)
+				return nil, errMessage
 			}
 		}
 	} else {
-		return nil, errors.New("Vote already exist")
+		errMessage := helpers.ErrorMessage(helpers.VoteExist)
+		return nil, errMessage
 	}
 	return &u, err
 }
@@ -69,7 +60,12 @@ func GetVote(author string, projectId int64) (u *Vote, err error) {
 	vote := Vote{Author: author, ProjectId: projectId}
 	err = o.Read(&vote, "author", "projectId")
 	if err != nil {
-		return nil, errors.New("Vote not exists")
+		if err == orm.ErrNoRows {
+			errMessage := helpers.ErrorMessage(helpers.CheckVote)
+			return nil, errMessage
+		}
+		errMessage := helpers.ErrorMessage(helpers.Get)
+		return nil, errMessage
 	} else {
 		return &vote, nil
 	}
@@ -81,10 +77,7 @@ func GetTotalVote(projectID int64) (error, int64) {
 	o := orm.NewOrm()
 	_, err := GetProjectById(projectID)
 	if err != nil {
-		if err == orm.ErrNoRows {
-			return errors.New("project not found"), 0
-		}
-		return err, 0
+		return err, -1
 	}
 
 	var total int
@@ -92,7 +85,8 @@ func GetTotalVote(projectID int64) (error, int64) {
 	err = o.Raw("SELECT COUNT(id) FROM vote WHERE project_id = ? AND vote = 1", projectID).QueryRow(&total)
 	if err != nil {
 		log.Printf("err: %v", err)
-		return err, 0
+		errMessage := helpers.ErrorMessage(helpers.QueryError)
+		return errMessage, -1
 	}
 
 	return nil, int64(total)
@@ -115,14 +109,11 @@ func UpdateVote(uu *Vote) (u *Vote, err error) {
 			//update successful
 			return u, nil
 		} else {
-			return nil, err1
+			errMessage := helpers.ErrorMessage(helpers.Put)
+			return nil, errMessage
 		}
 	} else {
-		if err == orm.ErrNoRows {
-			return nil, errors.New("Vote Not Exist")
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 }
 
@@ -131,17 +122,15 @@ func DeleteVote(author string, projectId int64) error {
 
 	_, err := GetVote(author, projectId)
 	if err != nil {
-		if err == orm.ErrNoRows {
-			return errors.New("vote not found")
-		}
 		return err
 	}
 
 	_, err = o.Delete(&Vote{Author: author, ProjectId: projectId}, "author", "projectId")
 
 	if err != nil {
-		return err
-		log.Fatal("delete Vote failed")
+		log.Println("delete Vote failed")
+		errMessage := helpers.ErrorMessage(helpers.Delete)
+		return errMessage
 	}
 	return nil
 }

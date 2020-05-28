@@ -25,12 +25,16 @@ type ProjectController struct {
 func (u *ProjectController) Post() {
 	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	err = helpers.FetchAuth(tokenAuth)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
@@ -39,17 +43,24 @@ func (u *ProjectController) Post() {
 	u.ParseForm(&project)
 
 	if project.Author != tokenAuth.Username {
-		u.Data["json"] = errors.New("Unauthorized").Error()
+		err = errors.New("Unauthorized")
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
+		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 
 	validationErr := validations.ProjectValidation(&project)
 	if validationErr != nil {
+		errCode := helpers.ErrorCode(validationErr.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = validationErr.Error()
 	} else {
 		uu, err := models.AddProject(project)
 		if err != nil {
+			errCode := helpers.ErrorCode(err.Error())
+			u.Ctx.ResponseWriter.WriteHeader(errCode)
 			u.Data["json"] = err.Error()
 		} else {
 			file, header, err := u.GetFile("project_pic")
@@ -62,16 +73,22 @@ func (u *ProjectController) Post() {
 				project.ProjectPic = newFileName
 				err = u.SaveToFile("project_pic", newFileName)
 				if err != nil {
+					errCode := helpers.ErrorCode(err.Error())
+					u.Ctx.ResponseWriter.WriteHeader(errCode)
 					u.Data["json"] = err.Error()
 				} else {
 					err = helpers.CompressToPNG(newFileName)
 					if err != nil {
+						errCode := helpers.ErrorCode(err.Error())
+						u.Ctx.ResponseWriter.WriteHeader(errCode)
 						u.Data["json"] = err.Error()
 					} else {
 						//update
 						log.Printf("Project: %v\n", project)
 						uu, err = models.UpdateProject(uu.Project.Id, &project)
 						if err != nil {
+							errCode := helpers.ErrorCode(err.Error())
+							u.Ctx.ResponseWriter.WriteHeader(errCode)
 							u.Data["json"] = err.Error()
 						} else {
 							log.Printf("response: %v", uu)
@@ -110,11 +127,15 @@ func (u *ProjectController) GetProjectsByName() {
 func (u *ProjectController) GetById() {
 	id, err := u.GetInt64(":id")
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 	} else {
 		if id != 0 {
 			project, err := models.GetProjectById(id)
 			if err != nil {
+				errCode := helpers.ErrorCode(err.Error())
+				u.Ctx.ResponseWriter.WriteHeader(errCode)
 				u.Data["json"] = err.Error()
 			} else {
 				u.Data["json"] = project
@@ -145,18 +166,24 @@ func (u *ProjectController) GetLikeProjects() {
 func (u *ProjectController) Put() {
 	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	err = helpers.FetchAuth(tokenAuth)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	id, err := u.GetInt64(":id")
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 	} else {
 		if id != 0 {
@@ -165,7 +192,10 @@ func (u *ProjectController) Put() {
 			log.Printf("controller update: %v", project)
 
 			if project.Author != tokenAuth.Username {
-				u.Data["json"] = errors.New("Unauthorized").Error()
+				err = errors.New("Unauthorized")
+				errCode := helpers.ErrorCode(err.Error())
+				u.Ctx.ResponseWriter.WriteHeader(errCode)
+				u.Data["json"] = err.Error()
 				u.ServeJSON()
 				return
 			}
@@ -180,15 +210,21 @@ func (u *ProjectController) Put() {
 
 				err = u.SaveToFile("project_pic", newFileName)
 				if err != nil {
+					errCode := helpers.ErrorCode(err.Error())
+					u.Ctx.ResponseWriter.WriteHeader(errCode)
 					u.Data["json"] = err.Error()
 				} else {
 					err = helpers.CompressToPNG(newFileName)
 					if err != nil {
+						errCode := helpers.ErrorCode(err.Error())
+						u.Ctx.ResponseWriter.WriteHeader(errCode)
 						u.Data["json"] = err.Error()
 					} else {
 						project.ProjectPic = newFileName
 						uu, err1 := models.UpdateProject(id, &project)
 						if err1 != nil {
+							errCode := helpers.ErrorCode(err1.Error())
+							u.Ctx.ResponseWriter.WriteHeader(errCode)
 							u.Data["json"] = err1.Error()
 						} else {
 							u.Data["json"] = uu
@@ -199,6 +235,8 @@ func (u *ProjectController) Put() {
 				log.Printf("harusnya masuk sini: %v", project)
 				uu, err := models.UpdateProject(id, &project)
 				if err != nil {
+					errCode := helpers.ErrorCode(err.Error())
+					u.Ctx.ResponseWriter.WriteHeader(errCode)
 					u.Data["json"] = err.Error()
 				} else {
 					u.Data["json"] = uu
@@ -219,29 +257,40 @@ func (u *ProjectController) Put() {
 func (u *ProjectController) Delete() {
 	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	err = helpers.FetchAuth(tokenAuth)
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 		u.ServeJSON()
 		return
 	}
 	id, err := u.GetInt64(":id")
 	if err != nil {
+		errCode := helpers.ErrorCode(err.Error())
+		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 	} else {
 		if id != 0 {
 			project, err := models.GetProjectById(id)
 			if project.Project.Author != tokenAuth.Username {
-				u.Data["json"] = errors.New("Unauthorized").Error()
+				err1 := errors.New("Unauthorized")
+				errCode := helpers.ErrorCode(err1.Error())
+				u.Ctx.ResponseWriter.WriteHeader(errCode)
+				u.Data["json"] = err1.Error()
 				u.ServeJSON()
 				return
 			}
 			err = models.DeleteProject(id)
 			if err != nil {
+				errCode := helpers.ErrorCode(err.Error())
+				u.Ctx.ResponseWriter.WriteHeader(errCode)
 				u.Data["json"] = err.Error()
 			} else {
 				u.Data["json"] = "delete success!"
