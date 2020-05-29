@@ -92,7 +92,7 @@ func GetProjects(projectName string) *FilteredProjectList {
 	o := orm.NewOrm()
 	list := &FilteredProjectList{}
 	var projects []*FilteredProject
-	sql := "SELECT project.id, project.name, project.author, project.project_pic, project.description, project.created_at, (SELECT COUNT(vote.id) FROM vote WHERE vote.vote = 1 AND vote.project_id = project.id) as total_like FROM project WHERE LOWER(name) LIKE '%" + projectName + "%' ORDER BY total_like DESC;"
+	sql := "SELECT project.id, project.name, project.author, project.project_pic, project.description, project.created_at, (SELECT COUNT(vote.id) FROM vote WHERE vote.vote = 1 AND vote.project_id = project.id) as total_like FROM project WHERE LOWER(name) LIKE '%" + projectName + "%';"
 
 	num, err := o.Raw(sql).QueryRows(&projects)
 	if err != nil {
