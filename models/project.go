@@ -88,21 +88,22 @@ func AddProject(u Project) (*ProjectData, error) {
 	return resp, nil
 }
 
-func GetProjects(projectName string) *ProjectList {
+func GetProjects(projectName string) *FilteredProjectList {
 	o := orm.NewOrm()
-	list := &ProjectList{}
-	var projects []*Project
-	sql := "SELECT * FROM project WHERE LOWER(name) LIKE '%" + projectName + "%'"
+	list := &FilteredProjectList{}
+	var projects []*FilteredProject
+	sql := "SELECT project.id, project.name, project.author, project.project_pic, project.description, project.created_at, (SELECT COUNT(vote.id) FROM vote WHERE vote.vote = 1 AND vote.project_id = project.id) as total_like FROM project WHERE LOWER(name) LIKE '%" + projectName + "%' ORDER BY total_like DESC;"
+
 	num, err := o.Raw(sql).QueryRows(&projects)
 	if err != nil {
 		log.Print("error query: ", err)
 		return nil
 	}
 
-	var projectData []*ProjectData
+	var projectData []*FilteredProjectData
 
 	for _, v := range projects {
-		u := &ProjectData{}
+		u := &FilteredProjectData{}
 		u.Project = *v
 		if v.ProjectPic != "" {
 			url := v.ProjectPic[:strings.LastIndexByte(v.ProjectPic, '.')] + "-compressed.png"
@@ -120,11 +121,12 @@ func GetProjects(projectName string) *ProjectList {
 
 }
 
-func GetProjectById(Id int64) (*ProjectData, error) {
+func GetProjectById(Id int64) (*FilteredProjectData, error) {
 	o := orm.NewOrm()
 	project := Project{Id: Id}
 
 	err := o.Read(&project)
+	log.Printf("model GetProjectByID project: %v", project)
 	if err == orm.ErrNoRows {
 		errMessage := helpers.ErrorMessage(helpers.CheckProject)
 		return nil, errMessage
@@ -132,8 +134,26 @@ func GetProjectById(Id int64) (*ProjectData, error) {
 		errMessage := helpers.ErrorMessage(helpers.Get)
 		return nil, errMessage
 	} else {
-		u := &ProjectData{}
-		u.Project = project
+		u := &FilteredProjectData{}
+		temp := FilteredProject{}
+		temp.Id = project.Id
+		temp.Name = project.Name
+		temp.Author = project.Author
+		temp.ProjectPic = project.ProjectPic
+		temp.Description = project.Description
+		temp.CreatedAt = project.CreatedAt
+
+		var total int
+
+		err = o.Raw("SELECT COUNT(id) FROM vote WHERE project_id = ? AND vote = 1", project.Id).QueryRow(&total)
+		if err != nil {
+			log.Printf("err: %v", err)
+			errMessage := helpers.ErrorMessage(helpers.QueryError)
+			return nil, errMessage
+		}
+
+		temp.TotalLike = int64(total)
+		u.Project = temp
 		if project.ProjectPic != "" {
 			url := project.ProjectPic[:strings.LastIndexByte(project.ProjectPic, '.')] + "-compressed.png"
 			u.CompressedPic = url
@@ -150,7 +170,12 @@ func UpdateProject(Id int64, uu *Project) (a *ProjectData, err error) {
 	u, err := GetProjectById(Id)
 	a = &ProjectData{}
 	project := Project{}
-	project = u.Project
+	project.Id = u.Project.Id
+	project.Name = u.Project.Name
+	project.Author = u.Project.Author
+	project.ProjectPic = u.Project.ProjectPic
+	project.Description = u.Project.Description
+	project.CreatedAt = u.Project.CreatedAt
 
 	if err == nil {
 		if uu.Author != project.Author {

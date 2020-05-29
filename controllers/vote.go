@@ -6,6 +6,7 @@ import (
 	"ProjectGallery/validations"
 	"encoding/json"
 	"errors"
+	"log"
 	"strconv"
 
 	"github.com/astaxie/beego"
@@ -80,7 +81,10 @@ func (u *VoteController) GetProjectVote() {
 		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 	} else {
+		log.Printf("coming here\n")
 		err, totalLike := models.GetTotalVote(projectId)
+		log.Printf("total_like: %v\n", totalLike)
+
 		if err != nil {
 			errCode := helpers.ErrorCode(err.Error())
 			u.Ctx.ResponseWriter.WriteHeader(errCode)
