@@ -121,6 +121,19 @@ func (u *ProjectController) GetProjectsByName() {
 	u.ServeJSON()
 }
 
+// @Title GetProjectsByUsername
+// @Description get all projects with specific name
+// @Success 200 {object} models.Project
+// @router /username/:username [get]
+func (u *ProjectController) GetProjectsByUsername() {
+	name := u.GetString(":username")
+	if name != "" {
+		projects := models.GetProjectsByUsername(name)
+		u.Data["json"] = projects
+	}
+	u.ServeJSON()
+}
+
 // @Title GetById
 // @Description get user by username
 // @Param	id		path 	int	true		"The key for staticblock"

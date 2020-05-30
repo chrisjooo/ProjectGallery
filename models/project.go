@@ -121,6 +121,38 @@ func GetProjects(projectName string) *FilteredProjectList {
 
 }
 
+func GetProjectsByUsername(username string) *FilteredProjectList {
+	o := orm.NewOrm()
+	list := &FilteredProjectList{}
+	var projects []*FilteredProject
+
+	num, err := o.Raw("SELECT project.id, project.name, project.author, project.project_pic, project.description, project.created_at, (SELECT COUNT(vote.id) FROM vote WHERE vote.vote = 1 AND vote.project_id = project.id) as total_like FROM project WHERE author=?", username).QueryRows(&projects)
+	if err != nil {
+		log.Print("error query: ", err)
+		return nil
+	}
+
+	var projectData []*FilteredProjectData
+
+	for _, v := range projects {
+		u := &FilteredProjectData{}
+		u.Project = *v
+		if v.ProjectPic != "" {
+			url := v.ProjectPic[:strings.LastIndexByte(v.ProjectPic, '.')] + "-compressed.png"
+			u.CompressedPic = url
+		} else {
+			u.CompressedPic = ""
+		}
+		projectData = append(projectData, u)
+	}
+
+	list.Data = projectData
+	list.NumProject = num
+
+	return list
+
+}
+
 func GetProjectById(Id int64) (*FilteredProjectData, error) {
 	o := orm.NewOrm()
 	project := Project{Id: Id}
