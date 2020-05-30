@@ -4,3 +4,5 @@
 *.sum
 main
 ProjectGallery
+static/images/projects/*
+static/images/accounts/*
