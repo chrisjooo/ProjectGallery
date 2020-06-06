@@ -18,11 +18,11 @@ type Vote struct {
 	Vote      bool   `json:"isLiked"`
 }
 
-func AddVote(u Vote) (*Vote, error) {
+func AddVote(user string, u Vote) (*Vote, error) {
 	//ORM database
 	o := orm.NewOrm()
 
-	_, err := GetProjectById(u.ProjectId)
+	_, err := GetProjectById(user, u.ProjectId)
 	if err != nil {
 		return nil, err
 	}
@@ -72,10 +72,10 @@ func GetVote(author string, projectId int64) (u *Vote, err error) {
 
 }
 
-func GetTotalVote(projectID int64) (error, int64) {
+func GetTotalVote(user string, projectID int64) (error, int64) {
 
 	o := orm.NewOrm()
-	_, err := GetProjectById(projectID)
+	_, err := GetProjectById(user, projectID)
 	if err != nil {
 		return err, -1
 	}

@@ -56,7 +56,7 @@ func (u *VoteController) Post() {
 		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = validationErr.Error()
 	} else {
-		newrating, err := models.AddVote(rating)
+		newrating, err := models.AddVote(tokenAuth.Username, rating)
 		if err != nil {
 			errCode := helpers.ErrorCode(err.Error())
 			u.Ctx.ResponseWriter.WriteHeader(errCode)
@@ -75,14 +75,18 @@ func (u *VoteController) Post() {
 // @router /:projectId [get]
 func (u *VoteController) GetProjectVote() {
 	projectId, err := u.GetInt64(":projectId")
-
+	username := ""
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err == nil {
+		username = tokenAuth.Username
+	}
 	if err != nil {
 		errCode := helpers.ErrorCode(err.Error())
 		u.Ctx.ResponseWriter.WriteHeader(errCode)
 		u.Data["json"] = err.Error()
 	} else {
 		log.Printf("coming here\n")
-		err, totalLike := models.GetTotalVote(projectId)
+		err, totalLike := models.GetTotalVote(username, projectId)
 		log.Printf("total_like: %v\n", totalLike)
 
 		if err != nil {

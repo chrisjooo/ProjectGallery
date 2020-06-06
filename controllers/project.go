@@ -5,7 +5,7 @@ import (
 	"ProjectGallery/models"
 	"ProjectGallery/validations"
 	"errors"
-	"log"
+	_ "log"
 	"strconv"
 
 	"strings"
@@ -71,7 +71,6 @@ func (u *ProjectController) Post() {
 				fileType := fileName[strings.IndexByte(fileName, '.'):]
 				newFileName := url + strconv.FormatInt(uu.Project.Id, 10) + fileType
 				domain := beego.AppConfig.String("domain")
-				log.Printf("domain: %v\n", domain)
 				urlFileName := domain + "/static/images/projects/" + strconv.FormatInt(uu.Project.Id, 10) + fileType
 				project.ProjectPic = urlFileName
 				err = u.SaveToFile("project_pic", newFileName)
@@ -86,15 +85,12 @@ func (u *ProjectController) Post() {
 						u.Ctx.ResponseWriter.WriteHeader(errCode)
 						u.Data["json"] = err.Error()
 					} else {
-						//update
-						log.Printf("Project: %v\n", project)
-						uu, err = models.UpdateProject(uu.Project.Id, &project)
+						uu, err = models.UpdateProject(tokenAuth.Username, uu.Project.Id, &project)
 						if err != nil {
 							errCode := helpers.ErrorCode(err.Error())
 							u.Ctx.ResponseWriter.WriteHeader(errCode)
 							u.Data["json"] = err.Error()
 						} else {
-							log.Printf("response: %v", uu)
 							u.Data["json"] = uu
 						}
 					}
@@ -114,8 +110,14 @@ func (u *ProjectController) Post() {
 // @router /:name [get]
 func (u *ProjectController) GetProjectsByName() {
 	name := u.GetString(":name")
+	username := ""
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err == nil {
+		username = tokenAuth.Username
+	}
+
 	if name != "" {
-		projects := models.GetProjects(name)
+		projects := models.GetProjects(username, name)
 		u.Data["json"] = projects
 	}
 	u.ServeJSON()
@@ -127,8 +129,13 @@ func (u *ProjectController) GetProjectsByName() {
 // @router /username/:username [get]
 func (u *ProjectController) GetProjectsByUsername() {
 	name := u.GetString(":username")
+	username := ""
+	tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+	if err == nil {
+		username = tokenAuth.Username
+	}
 	if name != "" {
-		projects := models.GetProjectsByUsername(name)
+		projects := models.GetProjectsByUsername(username, name)
 		u.Data["json"] = projects
 	}
 	u.ServeJSON()
@@ -148,7 +155,12 @@ func (u *ProjectController) GetById() {
 		u.Data["json"] = err.Error()
 	} else {
 		if id != 0 {
-			project, err := models.GetProjectById(id)
+			username := ""
+			tokenAuth, err := helpers.ExtractTokenMetadata(u.Ctx)
+			if err == nil {
+				username = tokenAuth.Username
+			}
+			project, err := models.GetProjectById(username, id)
 			if err != nil {
 				errCode := helpers.ErrorCode(err.Error())
 				u.Ctx.ResponseWriter.WriteHeader(errCode)
@@ -166,6 +178,7 @@ func (u *ProjectController) GetById() {
 // @Success 200 {object} models.Project
 // @router /filter/like [get]
 func (u *ProjectController) GetLikeProjects() {
+	
 	projects := models.GetMostLikeProject()
 	u.Data["json"] = projects
 
@@ -205,7 +218,6 @@ func (u *ProjectController) Put() {
 		if id != 0 {
 			project := models.Project{}
 			u.ParseForm(&project)
-			log.Printf("controller update: %v", project)
 
 			if project.Author != tokenAuth.Username {
 				err = errors.New("Unauthorized")
@@ -237,10 +249,9 @@ func (u *ProjectController) Put() {
 						u.Data["json"] = err.Error()
 					} else {
 						domain := beego.AppConfig.String("domain")
-						log.Printf("domain: %v\n", domain)
 						urlFileName := domain + "/static/images/projects/" + strconv.FormatInt(id, 10) + fileType
 						project.ProjectPic = urlFileName
-						uu, err1 := models.UpdateProject(id, &project)
+						uu, err1 := models.UpdateProject(tokenAuth.Username, id, &project)
 						if err1 != nil {
 							errCode := helpers.ErrorCode(err1.Error())
 							u.Ctx.ResponseWriter.WriteHeader(errCode)
@@ -251,8 +262,7 @@ func (u *ProjectController) Put() {
 					}
 				}
 			} else {
-				log.Printf("harusnya masuk sini: %v", project)
-				uu, err := models.UpdateProject(id, &project)
+				uu, err := models.UpdateProject(tokenAuth.Username, id, &project)
 				if err != nil {
 					errCode := helpers.ErrorCode(err.Error())
 					u.Ctx.ResponseWriter.WriteHeader(errCode)
@@ -297,7 +307,7 @@ func (u *ProjectController) Delete() {
 		u.Data["json"] = err.Error()
 	} else {
 		if id != 0 {
-			project, err := models.GetProjectById(id)
+			project, err := models.GetProjectById(tokenAuth.Username, id)
 			if project.Project.Author != tokenAuth.Username {
 				err1 := errors.New("Unauthorized")
 				errCode := helpers.ErrorCode(err1.Error())
@@ -306,7 +316,7 @@ func (u *ProjectController) Delete() {
 				u.ServeJSON()
 				return
 			}
-			err = models.DeleteProject(id)
+			err = models.DeleteProject(tokenAuth.Username, id)
 			if err != nil {
 				errCode := helpers.ErrorCode(err.Error())
 				u.Ctx.ResponseWriter.WriteHeader(errCode)

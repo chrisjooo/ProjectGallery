@@ -28,6 +28,7 @@ type Project struct {
 type ProjectData struct {
 	Project       Project `json:"project_data"`
 	CompressedPic string  `json:"compressed_image"`
+	IsLiked       bool    `json:"isLiked"`
 }
 
 type ProjectList struct {
@@ -48,6 +49,7 @@ type FilteredProject struct {
 type FilteredProjectData struct {
 	Project       FilteredProject `json:"project_data"`
 	CompressedPic string          `json:"compressed_image"`
+	IsLiked       bool            `json:"isLiked"`
 }
 
 type FilteredProjectList struct {
@@ -88,7 +90,7 @@ func AddProject(u Project) (*ProjectData, error) {
 	return resp, nil
 }
 
-func GetProjects(projectName string) *FilteredProjectList {
+func GetProjects(user string, projectName string) *FilteredProjectList {
 	o := orm.NewOrm()
 	list := &FilteredProjectList{}
 	var projects []*FilteredProject
@@ -111,6 +113,20 @@ func GetProjects(projectName string) *FilteredProjectList {
 		} else {
 			u.CompressedPic = ""
 		}
+
+		if user == "" {
+			u.IsLiked = false
+		} else {
+			// vote := &Vote{}
+			vote, errVote := GetVote(user, u.Project.Id)
+			if errVote != nil {
+				u.IsLiked = false
+			} else {
+				log.Printf("%T %v\n", vote, vote.Vote)
+
+				u.IsLiked = vote.Vote
+			}
+		}
 		projectData = append(projectData, u)
 	}
 
@@ -121,7 +137,7 @@ func GetProjects(projectName string) *FilteredProjectList {
 
 }
 
-func GetProjectsByUsername(username string) *FilteredProjectList {
+func GetProjectsByUsername(user string, username string) *FilteredProjectList {
 	o := orm.NewOrm()
 	list := &FilteredProjectList{}
 	var projects []*FilteredProject
@@ -143,6 +159,20 @@ func GetProjectsByUsername(username string) *FilteredProjectList {
 		} else {
 			u.CompressedPic = ""
 		}
+		if user == "" {
+			u.IsLiked = false
+		} else {
+			// vote := &Vote{}
+			vote, errVote := GetVote(user, u.Project.Id)
+			if errVote != nil {
+				u.IsLiked = false
+			} else {
+				log.Printf("%T %v\n", vote, vote.Vote)
+
+				u.IsLiked = vote.Vote
+			}
+		}
+
 		projectData = append(projectData, u)
 	}
 
@@ -153,7 +183,7 @@ func GetProjectsByUsername(username string) *FilteredProjectList {
 
 }
 
-func GetProjectById(Id int64) (*FilteredProjectData, error) {
+func GetProjectById(user string, Id int64) (*FilteredProjectData, error) {
 	o := orm.NewOrm()
 	project := Project{Id: Id}
 
@@ -192,14 +222,27 @@ func GetProjectById(Id int64) (*FilteredProjectData, error) {
 		} else {
 			u.CompressedPic = ""
 		}
+		if user == "" {
+			u.IsLiked = false
+		} else {
+			// vote := &Vote{}
+			vote, errVote := GetVote(user, u.Project.Id)
+			if errVote != nil {
+				u.IsLiked = false
+			} else {
+				log.Printf("%T %v\n", vote, vote.Vote)
+
+				u.IsLiked = vote.Vote
+			}
+		}
 		return u, nil
 	}
 }
 
-func UpdateProject(Id int64, uu *Project) (a *ProjectData, err error) {
+func UpdateProject(user string, Id int64, uu *Project) (a *ProjectData, err error) {
 	o := orm.NewOrm()
 
-	u, err := GetProjectById(Id)
+	u, err := GetProjectById(user, Id)
 	a = &ProjectData{}
 	project := Project{}
 	project.Id = u.Project.Id
@@ -229,11 +272,10 @@ func UpdateProject(Id int64, uu *Project) (a *ProjectData, err error) {
 		}
 
 		a.Project = project
+		a.IsLiked = u.IsLiked
 
-		log.Printf("Updating project: %v", project)
 		// ORM Update
 		_, err1 := o.Update(&project)
-		log.Print(u, err)
 
 		if err1 == nil {
 			//update successful
@@ -247,10 +289,10 @@ func UpdateProject(Id int64, uu *Project) (a *ProjectData, err error) {
 	}
 }
 
-func DeleteProject(Id int64) error {
+func DeleteProject(user string, Id int64) error {
 	o := orm.NewOrm()
 
-	_, err := GetProjectById(Id)
+	_, err := GetProjectById(user, Id)
 	if err != nil {
 		return err
 	}
@@ -294,7 +336,7 @@ func FilterMostLikeProject() *FilteredProjectList {
 
 	list.Data = projectData
 	list.NumProject = num
-	
+
 	return list
 }
 
