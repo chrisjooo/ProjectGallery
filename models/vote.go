@@ -117,20 +117,20 @@ func UpdateVote(uu *Vote) (u *Vote, err error) {
 	}
 }
 
-func DeleteVote(author string, projectId int64) error {
+func DeleteVote(author string, projectId int64) (vote *Vote, err error) {
 	o := orm.NewOrm()
 
-	_, err := GetVote(author, projectId)
+	vote, err = GetVote(author, projectId)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, err = o.Delete(&Vote{Author: author, ProjectId: projectId}, "author", "projectId")
 
 	if err != nil {
 		log.Println("delete Vote failed")
-		errMessage := helpers.ErrorMessage(helpers.Delete)
-		return errMessage
+		err = helpers.ErrorMessage(helpers.Delete)
+		return nil, err
 	}
-	return nil
+	return vote, nil
 }

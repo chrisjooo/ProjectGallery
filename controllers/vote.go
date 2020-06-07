@@ -205,13 +205,13 @@ func (u *VoteController) Delete() {
 			return
 		}
 
-		err = models.DeleteVote(author, proId)
+		vote, err := models.DeleteVote(author, proId)
 		if err != nil {
 			errCode := helpers.ErrorCode(err.Error())
 			u.Ctx.ResponseWriter.WriteHeader(errCode)
 			u.Data["json"] = err.Error()
 		} else {
-			u.Data["json"] = "delete success!"
+			u.Data["json"] = vote
 		}
 	} else {
 		u.Data["json"] = err.Error()
